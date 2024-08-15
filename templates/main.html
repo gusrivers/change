@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Room Scheduler</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        .room {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .room h2 {
+            margin-top: 0;
+        }
+        .schedule-button {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .schedule-form {
+            display: none;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Enterprise Meeting Rooms</h1>
+
+    <div class="room">
+        <h2>Room A</h2>
+        <p>Capacity: 10 people</p>
+        <button class="schedule-button" onclick="openForm('formA')">Schedule a Meeting</button>
+        <div id="formA" class="schedule-form">
+            <form id="formAData">
+                <input type="hidden" name="room" value="Room A">
+                <label for="dateA">Date:</label>
+                <input type="date" id="dateA" name="date" required><br><br>
+                <label for="timeA">Time:</label>
+                <input type="time" id="timeA" name="time" required><br><br>
+                <label for="purposeA">Purpose:</label>
+                <input type="text" id="purposeA" name="purpose" required><br><br>
+                <button type="button" onclick="submitForm('formAData')">Confirm</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openForm(formId) {
+            var form = document.getElementById(formId);
+            form.style.display = form.style.display === "block" ? "none" : "block";
+        }
+
+        function submitForm(formId) {
+            var form = document.getElementById(formId);
+            var formData = new FormData(form);
+            var jsonData = {};
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            fetch('/schedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    form.reset();
+                    form.style.display = "none";
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+
+</body>
+</html>

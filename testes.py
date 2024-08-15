@@ -51,7 +51,7 @@ def register():
         now = datetime.now()
         date = now.strftime("%Y/%m/%d %H:%M:%S")
 
-        connection = mysql.connector.connect(host='127.0.0.1:3307',
+        connection = mysql.connector.connect(host='localhost',
                                         database='testes',
                                         user='root',
                                         password='Admin123!@#')
