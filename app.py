@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 
 # Configure MySQL connection
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://username:password@localhost/meeting_scheduler'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/meeting_scheduler'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -19,12 +19,11 @@ class Meeting(db.Model):
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('main.html')
 
 @app.route('/schedule', methods=['POST'])
 def schedule_meeting():
     data = request.get_json()
-    
     room = data.get('room')
     date = data.get('date')
     time = data.get('time')
@@ -33,9 +32,9 @@ def schedule_meeting():
     new_meeting = Meeting(room=room, date=date, time=time, purpose=purpose)
     db.session.add(new_meeting)
     db.session.commit()
-    
+    print(new_meeting)
     return jsonify({'status': 'success', 'message': 'Meeting scheduled successfully'})
 
 if __name__ == '__main__':
-    db.create_all()  # Create tables
+#    db.create_all()  # Create tables
     app.run(debug=True)
