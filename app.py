@@ -1,40 +1,60 @@
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
-
-# Configure MySQL connection
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/meeting_scheduler'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/sala'
 db = SQLAlchemy(app)
 
-# Define the meeting model
-class Meeting(db.Model):
+class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    room = db.Column(db.String(50), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
-    purpose = db.Column(db.String(200), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    capacity = db.Column(db.Integer)
+    status = db.Column(db.String(20), default='Available')
+
+class Schedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    room_id = db.Column(db.Integer, db.ForeignKey('room.id'), nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    purpose = db.Column(db.String(255))
+    status = db.Column(db.String(20), default='Occupied')
+
 
 @app.route('/')
-def home():
-    return render_template('main.html')
+def rooms():
+    rooms = Room.query.all()
+    return render_template('main.html', rooms=rooms)
 
-@app.route('/schedule', methods=['POST'])
-def schedule_meeting():
-    data = request.get_json()
-    room = data.get('room')
-    date = data.get('date')
-    time = data.get('time')
-    purpose = data.get('purpose')
-    
-    new_meeting = Meeting(room=room, date=date, time=time, purpose=purpose)
-    db.session.add(new_meeting)
-    db.session.commit()
-    print(new_meeting)
-    return jsonify({'status': 'success', 'message': 'Meeting scheduled successfully'})
+@app.route('/room/<int:room_id>')
+def room_schedule(room_id):
+    room = Room.query.get_or_404(room_id)
+    schedules = Schedule.query.filter_by(room_id=room_id).all()
+    return render_template('room.html', room=room, schedules=schedules)
+
+
+@app.route('/api/room/<int:room_id>/schedule', methods=['GET', 'POST'])
+def manage_schedule(room_id):
+    if request.method == 'GET':
+        schedules = Schedule.query.filter_by(room_id=room_id).all()
+        schedule_data = [{
+            'time': f"{schedule.start_time.strftime('%H:%M')} - {schedule.end_time.strftime('%H:%M')}",
+            'status': schedule.status,
+            'purpose': schedule.purpose
+        } for schedule in schedules]
+        return jsonify(schedule_data)
+
+    if request.method == 'POST':
+        data = request.json
+        start_time = datetime.strptime(data['time'], '%H:%M')
+        end_time = start_time + timedelta(hours=1)  # Assuming 1-hour meetings
+        purpose = data['purpose']
+
+        new_schedule = Schedule(room_id=room_id, start_time=start_time, end_time=end_time, purpose=purpose, status='Occupied')
+        db.session.add(new_schedule)
+        db.session.commit()
+        return jsonify({'success': True})
 
 if __name__ == '__main__':
-#    db.create_all()  # Create tables
     app.run(debug=True)

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ room_name }} Schedule</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Agenda para a {{ room_name }}</h1>
+
+    <div id="schedule-container"></div>
+
+    <!-- Modal overlay -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div id="booking-form" class="modal-form">
+            <h2>Schedule a Meeting</h2>
+            <form id="schedule-meeting-form">
+                <label for="meeting-time">Time:</label>
+                <input type="text" id="meeting-time" name="time" readonly><br><br>
+
+                <label for="meeting-purpose">Purpose:</label>
+                <input type="text" id="meeting-purpose" name="purpose" required><br><br>
+
+                <button type="submit">Confirm Booking</button>
+                <button type="button" id="close-modal">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const roomName = "{{ room_name }}";
+
+            fetch(`/api/room/${roomName}/schedule`)
+                .then(response => response.json())
+                .then(data => {
+                    const scheduleContainer = document.getElementById('schedule-container');
+                    if (data.length > 0) {
+                        data.forEach(schedule => {
+                            const scheduleDiv = document.createElement('div');
+                            scheduleDiv.className = `schedule-item ${schedule.status.toLowerCase()}`;
+
+                            scheduleDiv.innerHTML = `
+                                <p><strong>Time:</strong> ${schedule.time}</p>
+                                <p><strong>Status:</strong> ${schedule.status}</p>
+                                ${schedule.status === "Occupied" ? `<p><strong>Purpose:</strong> ${schedule.purpose}</p>` : ''}
+                            `;
+
+                            if (schedule.status === "Available") {
+                                scheduleDiv.style.cursor = "pointer";
+                                scheduleDiv.addEventListener('click', function() {
+                                    openBookingForm(schedule.time);
+                                });
+                            }
+
+                            scheduleContainer.appendChild(scheduleDiv);
+                        });
+                    } else {
+                        scheduleContainer.innerHTML = '<p>No schedule available for this room.</p>';
+                    }
+                })
+                .catch(error => console.error('Error fetching schedule:', error));
+
+            function openBookingForm(time) {
+                const modalOverlay = document.getElementById('modal-overlay');
+                const timeInput = document.getElementById('meeting-time');
+                
+                timeInput.value = time;
+                modalOverlay.style.display = 'flex';
+            }
+
+            document.getElementById('schedule-meeting-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                const formData = new FormData(event.target);
+                const time = formData.get('time');
+                const purpose = formData.get('purpose');
+
+                fetch(`/api/room/${roomName}/schedule`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        time: time,
+                        purpose: purpose
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error scheduling meeting. Please try again.');
+                    }
+                })
+                .catch(error => console.error('Error scheduling meeting:', error));
+            });
+
+            document.getElementById('close-modal').addEventListener('click', function() {
+                document.getElementById('modal-overlay').style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
