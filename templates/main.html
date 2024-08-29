@@ -11,7 +11,7 @@
 
     <div id="rooms-container">
         {% for room in rooms %}
-        <div class="room-card" onclick="window.location.href='/room/{{ room.id }}'">
+        <div class="room-card" onclick="window.location.href='/room/{{ room.id }}/schedule'">
             <h2>{{ room.name }}</h2>
             <p>{{ room.description }}</p>
             <p>{{ room.capacity }} Lugares</p>
