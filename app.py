@@ -48,7 +48,7 @@ def manage_schedule(room_id):
     if request.method == 'POST':
         data = request.json
         start_time = datetime.strptime(data['time'], '%H:%M')
-        end_time = start_time + timedelta(hours=1)  # Assuming 1-hour meetings
+        end_time = start_time + timedelta(hours=1)
         purpose = data['purpose']
 
         new_schedule = Schedule(room_id=room_id, start_time=start_time, end_time=end_time, purpose=purpose, status='Occupied')

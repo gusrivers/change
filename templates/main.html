@@ -14,6 +14,7 @@
         <div class="room-card" onclick="window.location.href='/room/{{ room.id }}'">
             <h2>{{ room.name }}</h2>
             <p>{{ room.description }}</p>
+            <p>{{ room.capacity }} Lugares</p>
         </div>
         {% endfor %}
     </div>

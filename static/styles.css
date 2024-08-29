@@ -207,3 +207,26 @@ h1 {
         height: 150px; /* Adjust height for smaller screens */
     }
 }
+/* Existing styles... */
+
+/* Container for the Create Room Button */
+.create-room-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Create Room Button Styles */
+.create-room-button {
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.create-room-button:hover {
+    background-color: #2980b9;
+}
