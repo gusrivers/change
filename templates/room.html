@@ -2,99 +2,84 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Room Schedule</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesr.css') }}">
 </head>
 <body>
-    <h1>Agenda para a {{ room.name }}</h1>
-
-    <div id="schedule-container">
+    <h1>Room: {{ room.name }}</h1>
+    <div class="schedule-container">
         {% for slot in schedule %}
-            <div class="time-slot {{slot.status}}" data-time="{{ slot.time }}" data-status="{{ slot.status }}">
-                <div class="time">{{ slot.time }}</div>
-                <div class="status">{{ slot.status }}</div>
-                {% if slot.status == 'Occupied' %}
-                    <div class="details">
-                        <div><strong>Motivo:</strong> {{ slot.meeting.purpose }}</div>
-                        <div><strong>Agendado por:</strong> {{ slot.meeting.booked_by }}</div>
-                        <div><strong>Horário inicial:</strong> {{ slot.meeting.start_time }}</div>
-                        <div><strong>Horário final:</strong> {{ slot.meeting.end_time }}</div>
-                    </div>
-                {% endif %}
-            </div>
+        <div class="schedule-slot {{ slot.status.lower() }}" onclick="openBookingModal('{{ slot.time }}', '{{ slot.status }}')">
+            <span>{{ slot.time }}</span>
+            <span>{{ slot.meeting.booked_by if slot.meeting else '' }}</span>
+        </div>
         {% endfor %}
     </div>
 
-    <!-- Modal for booking a meeting -->
-    <div id="booking-modal" class="modal">
+    <!-- Modal -->
+    <div id="bookingModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Book Meeting</h2>
-            <form id="booking-form">
-                <input type="hidden" id="slot-time" name="slot_time">
-                <div>
-                    <label for="start-time">Start Time:</label>
-                    <input type="text" id="start-time" name="start_time" readonly>
-                </div>
-                <div>
-                    <label for="end-time">End Time:</label>
-                    <input type="text" id="end-time" name="end_time" readonly>
-                </div>
-                <div>
-                    <label for="purpose">Purpose:</label>
-                    <input type="text" id="purpose" name="purpose" required>
-                </div>
-                <div>
-                    <label for="booked-by">Booked By:</label>
-                    <input type="text" id="booked-by" name="booked_by" required>
-                </div>
-                <button type="submit">Confirm Booking</button>
+            <span class="close" onclick="closeBookingModal()">&times;</span>
+            <h2>Book Meeting at <span id="modalTime"></span></h2>
+            <form id="bookingForm" method="POST">
+                <label for="username">Username:</label>
+                <input type="text" name="username" id="username" required>
+                <br>
+                <label for="password">Password:</label>
+                <input type="password" name="password" id="password" required>
+                <br>
+                <label for="purpose">Purpose:</label>
+                <input type="text" name="purpose" id="purpose" required>
+                <br>
+                <button type="button" onclick="confirmBooking()">Confirm Booking</button>
             </form>
         </div>
     </div>
 
     <script>
-        $(document).ready(function() {
-            $('.time-slot').click(function() {
-                var time = $(this).data('time');
-                var status = $(this).data('status');
-                
-                if (status === 'Available') {
-                    $('#slot-time').val(time);
-                    $('#start-time').val(time);
-                    $('#end-time').val(moment(time, 'HH:mm').add(1, 'hour').format('HH:mm')); // Assuming 1-hour meetings
-                    
-                    $('#booking-modal').show();
+        function openBookingModal(time, status) {
+            if (status.toLowerCase() === 'available') {
+                document.getElementById('modalTime').textContent = time;
+                document.getElementById('bookingModal').style.display = 'block';
+            } else {
+                alert('This time slot is not available.');
+            }
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+        }
+
+        function confirmBooking() {
+            const time = document.getElementById('modalTime').textContent;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const purpose = document.getElementById('purpose').value;
+
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    start_time: time,
+                    end_time: time,
+                    username: username,
+                    password: password,
+                    purpose: purpose
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
                 } else {
-                    alert('This time slot is not available.');
+                    alert('Meeting scheduled successfully!');
+                    closeBookingModal();
+                    location.reload();
                 }
             });
-
-            $('.close-btn').click(function() {
-                $('#booking-modal').hide();
-            });
-
-            $('#booking-form').submit(function(event) {
-                event.preventDefault();
-
-                $.ajax({
-                    url: '{{ url_for("book_meeting", room_id=room.id) }}',
-                    type: 'POST',
-                    data: $(this).serialize(),
-                    success: function(response) {
-                        alert('Meeting booked successfully.');
-                        $('#booking-modal').hide();
-                        location.reload(); // Reload the page to reflect the new booking
-                    },
-                    error: function(response) {
-                        alert('Error booking the meeting.');
-                    }
-                });
-            });
-        });
+        }
     </script>
 </body>
 </html>
