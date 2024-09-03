@@ -2,47 +2,56 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Room Schedule</title>
+    <title>Agendamento de salas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='stylesr.css') }}">
 </head>
 <body>
-    <h1>Room: {{ room.name }}</h1>
+    <header>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo">
+    </header>
+    <h1>{{ room.name }}</h1>
     <div class="schedule-container">
         {% for slot in schedule %}
         <div class="schedule-slot {{ slot.status.lower() }}" onclick="openBookingModal('{{ slot.time }}', '{{ slot.status }}')">
-            <span>{{ slot.time }}</span>
-            <span>{{ slot.meeting.booked_by if slot.meeting else '' }}</span>
+            <span class="time">{{ slot.time }}</span>
+            {% if slot.status.lower() == 'occupied' %}
+            <div class="details">
+                <p>Agendado por: {{ slot.meeting.booked_by }}</p>
+                <p>Motivo: {{ slot.meeting.purpose }}</p>
+            </div>
+            {% else %}
+            <span>{{ slot.status }}</span>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
 
-    <!-- Modal -->
     <div id="bookingModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeBookingModal()">&times;</span>
-            <h2>Book Meeting at <span id="modalTime"></span></h2>
+            <h2>Agendar horário às <span id="modalTime"></span></h2>
             <form id="bookingForm" method="POST">
-                <label for="username">Username:</label>
+                <label for="username">Usuário:</label>
                 <input type="text" name="username" id="username" required>
                 <br>
-                <label for="password">Password:</label>
+                <label for="password">Senha:</label>
                 <input type="password" name="password" id="password" required>
                 <br>
-                <label for="purpose">Purpose:</label>
+                <label for="purpose">Motivo:</label>
                 <input type="text" name="purpose" id="purpose" required>
                 <br>
-                <button type="button" onclick="confirmBooking()">Confirm Booking</button>
+                <button type="button" onclick="confirmBooking()">Confirmar agendamento</button>
             </form>
         </div>
     </div>
 
     <script>
         function openBookingModal(time, status) {
-            if (status.toLowerCase() === 'available') {
+            if (status.toLowerCase() === 'disponível') {
                 document.getElementById('modalTime').textContent = time;
                 document.getElementById('bookingModal').style.display = 'block';
             } else {
-                alert('This time slot is not available.');
+                alert('Esse horário não está disponível.');
             }
         }
 
@@ -74,7 +83,7 @@
                 if (data.error) {
                     alert(data.error);
                 } else {
-                    alert('Meeting scheduled successfully!');
+                    alert('Horário agendado com sucesso!');
                     closeBookingModal();
                     location.reload();
                 }

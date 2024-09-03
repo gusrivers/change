@@ -1,57 +1,69 @@
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f5f5f5;
-    color: #333;
+    background: linear-gradient(135deg, #000428, #004e92); /* Dark blue to black gradient */
+    color: #ffffff;
     margin: 0;
     padding: 20px;
     line-height: 1.6;
 }
 
+header {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    padding: 5px 0;
+}
+
+.logo {
+    height: 80px;
+}
+
 h1 {
     font-size: 24px;
     text-align: center;
-    color: #444;
+    color: #ffffff;
     margin-bottom: 20px;
 }
 
 .schedule-container {
-    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    max-width: 500px;
     margin: 0 auto;
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .schedule-slot {
+    background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
+    border-radius: 10px;
     padding: 15px;
-    margin: 10px 0;
-    border-radius: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin-bottom: 10px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+    position: relative;
     cursor: pointer;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.schedule-slot span {
-    font-size: 16px;
-}
-
-.schedule-slot.available {
-    background-color: #d4edda; /* Light green */
-    border-left: 5px solid #28a745; /* Green border */
+.schedule-slot.disponível {
+    background-color: rgba(34, 139, 34, 0.3); /* Light green for available slots */
 }
 
 .schedule-slot.occupied {
-    background-color: #f8d7da; /* Light red */
-    border-left: 5px solid #dc3545; /* Red border */
+    background-color: rgba(139, 0, 0, 0.5); /* Dark red for occupied slots */
 }
 
 .schedule-slot:hover {
-    background-color: #f1f1f1;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.time {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.details {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #dddddd;
 }
 
 .modal {
@@ -67,56 +79,68 @@ h1 {
 }
 
 .modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
+    background-color: #1e1e1e; /* Dark gray background for the modal */
+    margin: 10% auto;
     padding: 20px;
-    border: 1px solid #888;
+    border: 1px solid #444;
     width: 80%;
     max-width: 500px;
-    position: relative;
+    border-radius: 10px;
+    color: #ffffff;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5); /* Add a subtle shadow */
 }
 
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
+.modal-content h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: #4A90E2; /* Light blue color for the modal title */
+}
+
+.modal-content label {
+    display: block;
+    margin-top: 10px;
+    color: #ffffff;
     font-weight: bold;
 }
 
-.close:hover,
-.close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-form {
-    display: flex;
-    flex-direction: column;
-}
-
-form label {
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-form input {
+.modal-content input[type="text"],
+.modal-content input[type="password"] {
+    width: 95%;
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    margin-top: 5px;
     margin-bottom: 10px;
+    border: 1px solid #555;
+    border-radius: 5px;
+    background-color: #2e2e2e;
+    color: #ffffff;
+    font-size: 14px;
 }
 
 button {
-    padding: 10px 15px;
-    background-color: #4CAF50;
+    background-color: #004e92;
     color: white;
+    padding: 10px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    margin-top: 15px;
+    width: 100%; /* Make the button full width */
 }
 
 button:hover {
-    background-color: #45a049;
+    background-color: #006bb3;
+}
+
+.close {
+    color: #cccccc;
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #ffffff;
+    text-decoration: none;
 }

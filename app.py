@@ -16,7 +16,7 @@ class Room(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     capacity = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String(20), default='Available')
+    status = db.Column(db.String(20), default='Disponível')
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
@@ -36,6 +36,28 @@ def rooms():
     rooms = Room.query.all()
     return render_template('main.html', rooms=rooms)
 
+@app.route('/create_room', methods=['POST'])
+def create_room():
+    data = request.get_json()
+    
+    name = data.get('name')
+    description = data.get('description')
+    capacity = data.get('capacity')
+    
+    if not name or not capacity:
+        return jsonify({'error': 'Name and capacity are required'}), 400
+
+    new_room = Room(
+        name=name,
+        description=description,
+        capacity=capacity
+    )
+
+    db.session.add(new_room)
+    db.session.commit()
+    
+    return jsonify({'message': 'Room created successfully', 'room_id': new_room.id}), 201
+
 @app.route('/room/<int:room_id>/schedule', methods=['GET', 'POST'])
 def room_schedule(room_id):
     room = Room.query.get_or_404(room_id)
@@ -52,7 +74,7 @@ def room_schedule(room_id):
 
         # Simple password check
         if not user or user.password != password:
-            return jsonify({"error": "Invalid username or password"}), 401
+            return jsonify({"error": "Usuário ou senha incorretos!"}), 401
 
         # Ensure the meeting is within working hours
         if start_time < time(8, 0) or end_time > time(18, 0):
@@ -91,7 +113,7 @@ def room_schedule(room_id):
     for hour in range(start_hour, end_hour):
         time_slot = {
             "time": f"{hour}:00",
-            "status": "Available",
+            "status": "Disponível",
             "meeting": None
         }
         for meeting in meetings:
@@ -109,4 +131,6 @@ def room_schedule(room_id):
     return render_template('room.html', room=room, schedule=schedule)
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
