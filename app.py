@@ -1,15 +1,20 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, time
+from functools import wraps
+import os
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/sala'
 db = SQLAlchemy(app)
+app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
+print(app.secret_key)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
 
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -129,6 +134,97 @@ def room_schedule(room_id):
         schedule.append(time_slot)
 
     return render_template('room.html', room=room, schedule=schedule)
+
+def is_admin():
+    return session.get('is_admin', False)
+
+# Admin login page
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+
+        # Check for simple password match without hashing
+        if user and user.password == password and user.is_admin:
+            session['admin_logged_in'] = True
+            session['is_admin'] = user.is_admin
+            return redirect(url_for('admin_users'))
+        
+        flash('Usuário e senha incorretos ou usuário não permitido!')  # Flash message if login fails or user is not an admin
+        return redirect(url_for('admin_login'))
+        
+    return render_template('admin_login.html')
+
+# Admin users management page
+@app.route('/admin/users')
+def admin_users():
+    if not is_admin():
+        return redirect(url_for('admin_login'))
+
+    users = User.query.all()
+    return render_template('admin_users.html', users=users)
+
+# Add new user
+@app.route('/admin/create_user', methods=['GET', 'POST'])
+def create_user():
+    if request.method == 'POST':
+        # Retrieve form data safely
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        is_admin = 'is_admin' in request.form  # Check if checkbox is selected
+
+        # Handle cases where form fields might be missing
+        if not username:
+            flash('Username is required!')
+            return redirect(url_for('create_user'))
+
+        # Create a new user object
+        new_user = User(username=username, password=password, is_admin=is_admin)
+
+        # Add user to database
+        db.session.add(new_user)
+        db.session.commit()
+
+        return redirect(url_for('admin_users'))  # Redirect to the user list or another page
+    return render_template('create_user.html')
+
+
+# Edit user page
+@app.route('/admin/edit_user/<int:user_id>', methods=['GET', 'POST'])
+def admin_edit_user(user_id):
+    if not is_admin():
+        return redirect(url_for('admin_login'))
+
+    user = User.query.get(user_id)
+    if request.method == 'POST':
+        user.username = request.form['username']
+        if request.form['password']:  # Update only if a new password is provided
+            user.password = request.form['password']
+        user.is_admin = 'is_admin' in request.form
+        db.session.commit()
+        return redirect(url_for('admin_users'))
+
+    return render_template('edit_user.html', user=user)
+
+# Delete user
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    return redirect(url_for('admin_users'))
+
+
+# Admin logout
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('admin_login'))
+
+
 
 if __name__ == '__main__':
     with app.app_context():

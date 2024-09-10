@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Agendamento de salas</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='stylesr.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='cssroom.css') }}">
 </head>
 <body>
     <header>
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo" onclick="window.location.href='/'">
     </header>
     <h1>{{ room.name }}</h1>
     <div class="schedule-container">

@@ -1,21 +1,24 @@
 body {
     font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #000428, #004e92); /* Dark blue to black gradient */
+    background: linear-gradient(135deg, #1a1a1a, #003366);; /* Dark blue to black gradient */
     color: #ffffff;
     margin: 0;
-    padding: 20px;
-    line-height: 1.6;
+    padding: 0px;
 }
 
 header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: left;
-    padding: 5px 0;
+    padding: 10px 20px;
+    background-color: #002d72;
+    border-bottom: 2px solid #004e92;
 }
 
 .logo {
     height: 80px;
+    margin-right: 20px;
+    cursor: pointer;
 }
 
 h1 {

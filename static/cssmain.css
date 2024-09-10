@@ -5,27 +5,46 @@ body {
     padding: 0;
     color: #ffffff;
     background: linear-gradient(135deg, #1a1a1a, #003366);
+    min-height: 100vh; /* Ensure the body takes up at least the full viewport height */
+    display: flex;
+    flex-direction: column; /* Ensure header and main content stack vertically */
 }
 
-/* Header Styles */
 header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    padding: 20px;
-    background-color: #002d72; /* Dark blue background */
-    border-bottom: 2px solid #004e92; /* Lighter blue border */
+    padding: 10px 20px;
+    background-color: #002d72;
+    border-bottom: 2px solid #004e92;
+    width: 100%;
+    box-sizing: border-box; /* Ensure padding is included in the total width */
 }
 
-header .logo {
-    width: 150px; /* Adjust the width as needed */
-    height: auto;
+.logo {
+    height: 80px;
+    margin-right: 20px;
+}
+
+.header-icon {
+    height: 50px;
+    cursor: pointer;
 }
 
 /* Page Title Styles */
 h1 {
     text-align: center;
-    margin-top: 20px;
+    margin: 20px 0;
     color: #ffffff;
+}
+
+/* Main Content Area */
+main {
+    flex: 1; /* Allow main content to grow and fill available space */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the content horizontally */
 }
 
 /* Room Cards Container */
@@ -34,6 +53,8 @@ h1 {
     flex-wrap: wrap;
     justify-content: center;
     padding: 20px;
+    width: 100%;
+    box-sizing: border-box; /* Ensure padding is included in the total width */
 }
 
 /* Room Card Styles */

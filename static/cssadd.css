@@ -1,0 +1,108 @@
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1a1a1a, #003366); /* Dark blue gradient */
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Ensure the body takes up the full height of the viewport */
+}
+
+header {
+    width: 100%;
+    background-color: #002d72;
+    border-bottom: 2px solid #004e92;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Align items to the start of the flex container */
+    box-sizing: border-box; /* Ensure padding is included in the total width */
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.logo {
+    height: 80px;
+    margin-right: 20px;
+    cursor: pointer;
+}
+
+.form-container {
+    background-color: #001f3f;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 500px;
+    text-align: center;
+}
+
+h1 {
+    color: #f0f0f0; /* Light color for header text */
+    text-align: center;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center form elements horizontally */
+}
+
+label {
+    width: 100%;
+    text-align: left;
+    margin-bottom: 5px;
+    color: #dcdcdc; /* Light grey for labels */
+    display: flex;
+    justify-content: space-between; /* Align label and input side by side */
+}
+
+input[type="text"],
+input[type="password"] {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #0056b3;
+    border-radius: 5px;
+    background: #003366; /* Slightly lighter blue background for input fields */
+    color: #fff;
+    width: 100%; /* Make input fields take up full width of the form container */
+    max-width: 480px; /* Optional: set a max-width for larger screens */
+}
+input[type="checkbox"] {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #0056b3;
+    justify-content: space-between;
+    align-items: left;
+}
+
+button {
+    background: #004494;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%; /* Make button take up full width of the form container */
+    max-width: 400px; /* Optional: set a max-width for larger screens */
+}
+
+button:hover {
+    background: #003366;
+}
+
+a {
+    color: #add8e6; /* Light blue color for links */
+    text-decoration: none;
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+}
+
+a:hover {
+    text-decoration: underline;
+}

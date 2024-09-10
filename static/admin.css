@@ -1,0 +1,104 @@
+/* General Blue Themed Styling for Admin Pages */
+body {
+    background: linear-gradient(135deg, #1a1a1a, #003366);
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    margin: 60;
+    padding: 0;
+}
+
+header {
+    width: 100%;
+    background-color: #002d72;
+    border-bottom: 2px solid #004e92;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.logo {
+    height: 80px;
+    margin-right: 20px;
+    cursor: pointer;
+}
+
+h1 {
+    color: #66b2ff;
+    margin: 20px 0; /* Adjusted margin for spacing */
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 auto;
+    margin-top: 150px; /* Add space for fixed header */
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #004e92;
+}
+
+th {
+    background-color: #003366;
+}
+
+td {
+    background-color: #001f3f;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+.edit-btn {
+    background-color: #007bff;
+}
+
+.edit-btn:hover {
+    background-color: #0056b3;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
+.add-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 20px auto;
+    display: block;
+}
+
+.add-btn:hover {
+    background-color: #0056b3;
+}

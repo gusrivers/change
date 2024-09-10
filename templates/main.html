@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rooms</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='stylesm.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='cssmain.css') }}">
 </head>
 <body>
     <header>
         <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo">
+        <img src="{{ url_for('static', filename='icon.png') }}" alt="Icon" class="header-icon" onclick="window.location.href='/admin/login'">
     </header>
+    
     <h1>Salas disponíveis</h1>
 
     <div id="rooms-container">
