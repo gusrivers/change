@@ -3,9 +3,18 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, time
 from functools import wraps
 import os
+from flask_mail import Mail, Message
+
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/sala'
+app.config['MAIL_SERVER'] = 'smtp.example.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your-email@example.com'
+app.config['MAIL_PASSWORD'] = 'your-password'
+mail = Mail(app)
 db = SQLAlchemy(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
 print(app.secret_key)
@@ -14,7 +23,9 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,15 +88,12 @@ def room_schedule(room_id):
 
         user = User.query.filter_by(username=username).first()
 
-        # Simple password check
         if not user or user.password != password:
             return jsonify({"error": "Usuário ou senha incorretos!"}), 401
 
-        # Ensure the meeting is within working hours
         if start_time < time(8, 0) or end_time > time(18, 0):
             return jsonify({"error": "Meetings can only be scheduled between 8 AM and 6 PM"}), 400
 
-        # Check for conflicts
         conflicts = Meeting.query.filter_by(room_id=room_id).filter(
             Meeting.start_time < end_time,
             Meeting.end_time > start_time
@@ -94,7 +102,6 @@ def room_schedule(room_id):
         if conflicts:
             return jsonify({"error": "The room is already booked for the requested time"}), 409
 
-        # Create and commit the new meeting
         new_meeting = Meeting(
             room_id=room_id,
             start_time=start_time,
@@ -108,7 +115,6 @@ def room_schedule(room_id):
 
         return jsonify({"message": "Meeting scheduled successfully", "meeting_id": new_meeting.id}), 201
 
-    # Handle the GET request to view the schedule
     meetings = Meeting.query.filter_by(room_id=room.id).all()
 
     schedule = []
@@ -135,10 +141,21 @@ def room_schedule(room_id):
 
     return render_template('room.html', room=room, schedule=schedule)
 
+def schedule_meeting():
+    meeting_details = "Meeting details here"
+    recipient_email = 'user_email@example.com'  # Retrieve from the database
+
+    msg = Message('Meeting Invitation', sender='your-email@example.com', recipients=[recipient_email])
+    msg.body = f'You have been invited to a meeting. {meeting_details}'
+    
+    mail.send(msg)
+
+    return redirect(url_for('meeting_page'))
+
 def is_admin():
     return session.get('is_admin', False)
 
-# Admin login page
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -146,7 +163,6 @@ def admin_login():
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
 
-        # Check for simple password match without hashing
         if user and user.password == password and user.is_admin:
             session['admin_logged_in'] = True
             session['is_admin'] = user.is_admin
@@ -157,7 +173,6 @@ def admin_login():
         
     return render_template('admin_login.html')
 
-# Admin users management page
 @app.route('/admin/users')
 def admin_users():
     if not is_admin():
@@ -166,33 +181,28 @@ def admin_users():
     users = User.query.all()
     return render_template('admin_users.html', users=users)
 
-# Add new user
 @app.route('/admin/create_user', methods=['GET', 'POST'])
 def create_user():
     if request.method == 'POST':
-        # Retrieve form data safely
         username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
 
-        is_admin = 'is_admin' in request.form  # Check if checkbox is selected
+        is_admin = 'is_admin' in request.form
 
-        # Handle cases where form fields might be missing
         if not username:
             flash('Username is required!')
             return redirect(url_for('create_user'))
 
-        # Create a new user object
-        new_user = User(username=username, password=password, is_admin=is_admin)
+        new_user = User(username=username, password=password, email=email, is_admin=is_admin)
 
-        # Add user to database
         db.session.add(new_user)
         db.session.commit()
 
-        return redirect(url_for('admin_users'))  # Redirect to the user list or another page
+        return redirect(url_for('admin_users'))
     return render_template('create_user.html')
 
 
-# Edit user page
 @app.route('/admin/edit_user/<int:user_id>', methods=['GET', 'POST'])
 def admin_edit_user(user_id):
     if not is_admin():
@@ -201,7 +211,7 @@ def admin_edit_user(user_id):
     user = User.query.get(user_id)
     if request.method == 'POST':
         user.username = request.form['username']
-        if request.form['password']:  # Update only if a new password is provided
+        if request.form['password']:
             user.password = request.form['password']
         user.is_admin = 'is_admin' in request.form
         db.session.commit()
@@ -209,7 +219,6 @@ def admin_edit_user(user_id):
 
     return render_template('edit_user.html', user=user)
 
-# Delete user
 @app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
@@ -218,7 +227,6 @@ def delete_user(user_id):
     return redirect(url_for('admin_users'))
 
 
-# Admin logout
 @app.route('/admin/logout')
 def admin_logout():
     session.pop('admin_logged_in', None)

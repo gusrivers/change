@@ -1,5 +1,6 @@
 /* admin.css */
 body {
+    flex: 1;
     background: linear-gradient(135deg, #1a1a1a, #003366);
     color: #fc3232;
     font-family: Arial, sans-serif;

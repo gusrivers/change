@@ -11,7 +11,7 @@
         <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo" onclick="window.location.href='/'">
     </header>
     <div class="container">
-        <h1>Edit User</h1>
+        <h1>Editar Usuário</h1>
         <form action="{{ url_for('admin_edit_user', user_id=user.id) }}" method="POST">
             <label for="username">Usuário:</label>
             <input type="text" id="username" name="username" value="{{ user.username }}" required>

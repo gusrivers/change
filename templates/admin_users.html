@@ -17,6 +17,7 @@
             <tr>
                 <th>Usuário</th>
                 <th>Admin</th>
+                <th>E-mail</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -25,10 +26,11 @@
             <tr>
                 <td>{{ user.username }}</td>
                 <td>{{ 'Sim' if user.is_admin else 'Não' }}</td>
+                <td>{{ user.email }}</td>
                 <td>
                     <a href="{{ url_for('admin_edit_user', user_id=user.id) }}" class="btn edit-btn">Editar</a>
                     <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn delete-btn">Deletar</button>
+                        <button type="submit" class="btn delete-btn" onclick="return confirm('Você tem certeza que irá deletar esse usuário?');">Deletar</button>
                     </form>
                 </td>
             </tr>
