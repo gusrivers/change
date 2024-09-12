@@ -30,16 +30,22 @@
         <div class="modal-content">
             <span class="close" onclick="closeBookingModal()">&times;</span>
             <h2>Agendar horário às <span id="modalTime"></span></h2>
-            <form id="bookingForm" method="POST">
-                <label for="username">Usuário:</label>
-                <input type="text" name="username" id="username" required>
-                <br>
-                <label for="password">Senha:</label>
-                <input type="password" name="password" id="password" required>
-                <br>
-                <label for="purpose">Motivo:</label>
-                <input type="text" name="purpose" id="purpose" required>
-                <br>
+            <form id="bookingForm">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            
+                <label for="purpose">Purpose:</label>
+                <input type="text" id="purpose" name="purpose" required>
+            
+                <label for="invitees">Invite Users:</label>
+                <select id="invitees" name="invitees" multiple>
+                    {% for user in users %}
+                    <option value="{{ user.email }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>            
                 <button type="button" onclick="confirmBooking()">Confirmar agendamento</button>
             </form>
         </div>
@@ -64,18 +70,20 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const purpose = document.getElementById('purpose').value;
+            const invitees = Array.from(document.getElementById('invitees').selectedOptions).map(option => option.value);
 
-            fetch(window.location.href, {
+            fetch(`/room/{{ room.id }}/schedule`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: JSON.stringify({
-                    start_time: time,
-                    end_time: time,
+                body: new URLSearchParams({
                     username: username,
                     password: password,
-                    purpose: purpose
+                    purpose: purpose,
+                    invitees: invitees.join(','),  // Send invitees as a comma-separated string
+                    start_time: time,
+                    end_time: time, // Adjust if needed
                 }),
             })
             .then(response => response.json())

@@ -79,12 +79,15 @@ def room_schedule(room_id):
     room = Room.query.get_or_404(room_id)
 
     if request.method == 'POST':
-        data = request.get_json()
+        data = request.form
         username = data.get('username')
         password = data.get('password')
-        start_time = datetime.strptime(data['start_time'], '%H:%M').time()
-        end_time = (datetime.combine(datetime.today(), start_time) + timedelta(hours=1)).time()
         purpose = data.get('purpose')
+        invitees = data.getlist('invitees')  # Get invitees from multi-select
+
+        # Set the start and end times
+        start_time = datetime.strptime(data.get('start_time'), '%H:%M').time()
+        end_time = (datetime.combine(datetime.today(), start_time) + timedelta(hours=1)).time()
 
         user = User.query.filter_by(username=username).first()
 
@@ -113,8 +116,16 @@ def room_schedule(room_id):
         db.session.add(new_meeting)
         db.session.commit()
 
-        return jsonify({"message": "Meeting scheduled successfully", "meeting_id": new_meeting.id}), 201
+        # Send email invitations to invitees
+        for email in invitees:
+            send_invitation_email(email, room.name, start_time, end_time, purpose)
 
+        return jsonify({"message": "Meeting scheduled successfully, invitations sent", "meeting_id": new_meeting.id}), 201
+
+    # Fetch users for the invitees dropdown
+    users = User.query.all()
+
+    # Fetch the room schedule as before
     meetings = Meeting.query.filter_by(room_id=room.id).all()
 
     schedule = []
@@ -139,22 +150,25 @@ def room_schedule(room_id):
                 break
         schedule.append(time_slot)
 
-    return render_template('room.html', room=room, schedule=schedule)
+    return render_template('room.html', room=room, schedule=schedule, users=users)
 
-def schedule_meeting():
-    meeting_details = "Meeting details here"
-    recipient_email = 'user_email@example.com'  # Retrieve from the database
 
-    msg = Message('Meeting Invitation', sender='your-email@example.com', recipients=[recipient_email])
-    msg.body = f'You have been invited to a meeting. {meeting_details}'
-    
+
+
+def send_invitation_email(recipient_email, room_name, start_time, end_time, purpose):
+    msg = Message(
+        'You are invited to a meeting',
+        sender='your-email@example.com',
+        recipients=[recipient_email]
+    )
+    msg.body = (f"You have been invited to a meeting.\n"
+                f"Room: {room_name}\n"
+                f"Time: {start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}\n"
+                f"Purpose: {purpose}")
     mail.send(msg)
-
-    return redirect(url_for('meeting_page'))
 
 def is_admin():
     return session.get('is_admin', False)
-
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -231,6 +245,47 @@ def delete_user(user_id):
 def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('admin_login'))
+
+#Email section
+def send_email(to, subject, body):
+    msg = Message(subject=subject,
+                  recipients=[to],
+                  body=body,
+                  sender=app.config['MAIL_USERNAME'])
+    with app.app_context():
+        mail.send(msg)
+
+def send_invitation_email(email, room_name, start_time, end_time, purpose):
+    subject = "Meeting Invitation"
+    body = f"""
+    Dear User,
+
+    You are invited to a meeting in the room {room_name}.
+
+    Purpose: {purpose}
+    Start Time: {start_time.strftime('%H:%M')}
+    End Time: {end_time.strftime('%H:%M')}
+
+    Please confirm your attendance.
+
+    Best regards,
+    Your Company
+    """
+    send_email(email, subject, body)
+
+
+@app.route('/invite', methods=['POST'])
+def invite_users():
+    user_ids = request.form.getlist('selected_users')  # List of selected user IDs
+    meeting_info = request.form['meeting_info']  # Info about the meeting
+
+    for user_id in user_ids:
+        user = User.query.get(user_id)  # Fetch user details from the database
+        if user and user.email:  # Check if the user has a valid email
+            send_invitation_email(user.email, meeting_info)
+    
+    flash('Invitations sent successfully!')
+    return redirect(url_for('manage_users'))
 
 
 
