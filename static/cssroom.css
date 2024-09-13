@@ -1,6 +1,6 @@
 body {
     font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #1a1a1a, #003366);; /* Dark blue to black gradient */
+    background: linear-gradient(to right, #1a1a1a, #003366);; /* Dark blue to black gradient */
     color: #ffffff;
     margin: 0;
     padding: 0px;
@@ -70,8 +70,10 @@ h1 {
 }
 
 .modal {
-    display: none;
+    display: flex;
     position: fixed;
+    align-items: center;
+    justify-content: center;
     z-index: 1;
     left: 0;
     top: 0;
@@ -86,9 +88,9 @@ h1 {
     margin: 10% auto;
     padding: 20px;
     border: 1px solid #444;
-    width: 80%;
+    width: 90%;
     max-width: 500px;
-    border-radius: 10px;
+    border-radius: 8px;
     color: #ffffff;
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5); /* Add a subtle shadow */
 }
@@ -101,7 +103,8 @@ h1 {
 
 .modal-content label {
     display: block;
-    margin-top: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
     color: #ffffff;
     font-weight: bold;
 }
@@ -156,4 +159,44 @@ select[multiple] {
     border: 1px solid #ccc;
     padding: 5px;
     font-size: 14px;
+}
+.custom-select {
+    position: relative;
+    font-family: Arial, sans-serif;
+    width: 100%;
+    max-width: 500px;
+    box-sizing: border-box;
+}
+
+.custom-select select {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 10px;
+    width: 100%;
+    height: auto;
+    appearance: none; /* Remove default arrow */
+    -webkit-appearance: none; /* For Safari */
+    -moz-appearance: none; /* For Firefox */
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.custom-select::after {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 16px;
+    color: #666;
+}
+
+.custom-select select:focus {
+    border-color: #0066cc;
+    outline: none;
+}
+
+.custom-select option {
+    padding: 10px;
 }

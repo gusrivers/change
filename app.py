@@ -76,8 +76,8 @@ def create_room():
 def send_invitation_email(email, user, room, start_time, end_time, purpose):
     print(f"Sending email for room: {room.name} by {user.username}")  # Debugging
     subject = f"Meeting Invitation: {purpose} at {start_time.strftime('%H:%M')}"
-    body = (f"Você foi convidado(a) por {user.username} para a reunião com motivo de: '{purpose}' "
-            f"na sala '{room.name}' às {start_time.strftime('%H:%M')}.\n\n"
+    body = (f"Você foi convidado(a) por {user.username} para a reunião com motivo de: {purpose} "
+            f"na sala {room.name} às {start_time.strftime('%H:%M')}.\n\n"
             f"Sala: {room.name}\nHorário: {start_time.strftime('%H:%M')}\n")
     
     send_email(email, subject, body)
@@ -157,10 +157,8 @@ def room_schedule(room_id):
         subject = f"Meeting Invitation: {purpose} at {start_time.strftime('%H:%M')}"
         body = f"You have been invited to a meeting for the purpose of '{purpose}' in room '{room.name}' at {start_time.strftime('%H:%M')}.\n\nDetails:\nRoom: {room.name}\nStart Time: {start_time.strftime('%H:%M')}\nEnd Time: {end_time.strftime('%H:%M')}."
 
-        # Send email to the meeting organizer
-        send_email(user.email, subject, f"Sua reunião foi agendada com sucesso!! \nSala: {room.name}\nMotivo: {purpose}\nHorário: {start_time}")
+        send_email(user.email, subject, f"Sua reunião foi agendada com sucesso!! \n\nSala: {room.name}\nMotivo: {purpose}\nHorário: {start_time}")
 
-        # Fetch the emails of the invitees, but handle cases where the invitee is not found
         invitee_emails = []
         for invitee_email in invitees:
             invitee_user = User.query.filter_by(email=invitee_email).first()
@@ -169,16 +167,12 @@ def room_schedule(room_id):
             else:
                 print(f"Invitee '{invitee_email}' not found in the database")  # Log missing invitees
 
-        # Send email invitations to invitees
         for email in invitee_emails:
             send_invitation_email(email, user, room, start_time, end_time, purpose)
 
         return jsonify({"message": "Meeting scheduled successfully, invitations sent", "meeting_id": new_meeting.id}), 201
 
-    # Fetch users for the invitees dropdown
     users = User.query.all()
-
-    # Fetch the room schedule as before
     meetings = Meeting.query.filter_by(room_id=room.id).all()
 
     schedule = []

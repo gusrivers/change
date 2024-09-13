@@ -26,28 +26,26 @@
         </div>
         {% endfor %}
     </div>
-
-    <div id="bookingModal" class="modal">
+        <div id="bookingModal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close" onclick="closeBookingModal()">&times;</span>
             <h2>Agendar horário às <span id="modalTime"></span></h2>
             <form id="bookingForm">
-                <label for="username">Username:</label>
+                <label for="username">Usuário:</label>
                 <input type="text" id="username" name="username" required>
             
-                <label for="password">Password:</label>
+                <label for="password">Senha:</label>
                 <input type="password" id="password" name="password" required>
             
-                <label for="purpose">Purpose:</label>
+                <label for="purpose">Motivo:</label>
                 <input type="text" id="purpose" name="purpose" required>
             
-                <label for="invitees">Invite Users:</label>
-                <select id="invitees" name="invitees" multiple>
+                <label for="invitees">Convidar usuários:</label>
+                <select id="invitees" name="invitees" multiple class="custom-select">
                     {% for user in users %}
                     <option value="{{ user.email }}">{{ user.username }}</option>
                     {% endfor %}
                 </select>
-            
                 <!-- Hidden field to capture start time if necessary -->
                 <input type="hidden" id="start_time" name="start_time">
             
