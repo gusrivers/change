@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Agendamento de salas</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='cssroom.css') }}">
 </head>
 <body>
@@ -45,9 +46,14 @@
                     {% for user in users %}
                     <option value="{{ user.email }}">{{ user.username }}</option>
                     {% endfor %}
-                </select>            
+                </select>
+            
+                <!-- Hidden field to capture start time if necessary -->
+                <input type="hidden" id="start_time" name="start_time">
+            
                 <button type="button" onclick="confirmBooking()">Confirmar agendamento</button>
             </form>
+            
         </div>
     </div>
 

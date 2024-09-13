@@ -4,16 +4,15 @@ from datetime import datetime, timedelta, time
 from functools import wraps
 import os
 from flask_mail import Mail, Message
-
-
+#import smtplib
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/sala'
-app.config['MAIL_SERVER'] = 'smtp.example.com'
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'your-email@example.com'
-app.config['MAIL_PASSWORD'] = 'your-password'
+app.config['MAIL_USERNAME'] = 'gutiiz.tavuu@gmail.com'
+app.config['MAIL_PASSWORD'] = 'nnhicreqlautstni'
 mail = Mail(app)
 db = SQLAlchemy(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
@@ -74,7 +73,27 @@ def create_room():
     
     return jsonify({'message': 'Room created successfully', 'room_id': new_room.id}), 201
 
-@app.route('/room/<int:room_id>/schedule', methods=['GET', 'POST'])
+def send_invitation_email(email, user, room, start_time, end_time, purpose):
+    print(f"Sending email for room: {room.name} by {user.username}")  # Debugging
+    subject = f"Meeting Invitation: {purpose} at {start_time.strftime('%H:%M')}"
+    body = (f"Você foi convidado(a) por {user.username} para a reunião com motivo de: '{purpose}' "
+            f"na sala '{room.name}' às {start_time.strftime('%H:%M')}.\n\n"
+            f"Sala: {room.name}\nHorário: {start_time.strftime('%H:%M')}\n")
+    
+    send_email(email, subject, body)
+
+
+def send_email(to, subject, body):
+    msg = Message(subject=subject,
+                  recipients=[to],
+                  body=body,
+                  sender=app.config['MAIL_USERNAME'])
+    with app.app_context():
+        mail.send(msg)
+
+from datetime import datetime, time, timedelta
+
+@app.route('/room/<int:room_id>/schedule', methods=['GET' ,'POST'])
 def room_schedule(room_id):
     room = Room.query.get_or_404(room_id)
 
@@ -83,12 +102,26 @@ def room_schedule(room_id):
         username = data.get('username')
         password = data.get('password')
         purpose = data.get('purpose')
-        invitees = data.getlist('invitees')  # Get invitees from multi-select
+        invitees = data.get('invitees')
+        if invitees:
+            invitees = [email.strip() for email in invitees.split(',')]
+        else:
+            invitees = []
 
-        # Set the start and end times
-        start_time = datetime.strptime(data.get('start_time'), '%H:%M').time()
+
+        # Get start time from form data
+        start_time_str = data.get('start_time')
+        if start_time_str:
+            try:
+                start_time = datetime.strptime(start_time_str, '%H:%M').time()
+            except ValueError:
+                return jsonify({"error": "Invalid start time format"}), 400
+        else:
+            return jsonify({"error": "Start time is required"}), 400
+
         end_time = (datetime.combine(datetime.today(), start_time) + timedelta(hours=1)).time()
 
+        # Fetch the user details (including email) from the database
         user = User.query.filter_by(username=username).first()
 
         if not user or user.password != password:
@@ -97,14 +130,18 @@ def room_schedule(room_id):
         if start_time < time(8, 0) or end_time > time(18, 0):
             return jsonify({"error": "Meetings can only be scheduled between 8 AM and 6 PM"}), 400
 
+        # Check for conflicts
         conflicts = Meeting.query.filter_by(room_id=room_id).filter(
-            Meeting.start_time < end_time,
-            Meeting.end_time > start_time
+            Meeting.start_time < end_time,  # Meeting starts before the new meeting ends
+            Meeting.end_time > start_time   # Meeting ends after the new meeting starts
         ).all()
 
         if conflicts:
+            for conflict in conflicts:
+                print(f"Conflict with meeting ID {conflict.id}: {conflict.start_time} to {conflict.end_time}")
             return jsonify({"error": "The room is already booked for the requested time"}), 409
 
+        # Create a new meeting
         new_meeting = Meeting(
             room_id=room_id,
             start_time=start_time,
@@ -116,9 +153,25 @@ def room_schedule(room_id):
         db.session.add(new_meeting)
         db.session.commit()
 
+        # Prepare email details for the invitees
+        subject = f"Meeting Invitation: {purpose} at {start_time.strftime('%H:%M')}"
+        body = f"You have been invited to a meeting for the purpose of '{purpose}' in room '{room.name}' at {start_time.strftime('%H:%M')}.\n\nDetails:\nRoom: {room.name}\nStart Time: {start_time.strftime('%H:%M')}\nEnd Time: {end_time.strftime('%H:%M')}."
+
+        # Send email to the meeting organizer
+        send_email(user.email, subject, f"Sua reunião foi agendada com sucesso!! \nSala: {room.name}\nMotivo: {purpose}\nHorário: {start_time}")
+
+        # Fetch the emails of the invitees, but handle cases where the invitee is not found
+        invitee_emails = []
+        for invitee_email in invitees:
+            invitee_user = User.query.filter_by(email=invitee_email).first()
+            if invitee_user:
+                invitee_emails.append(invitee_user.email)
+            else:
+                print(f"Invitee '{invitee_email}' not found in the database")  # Log missing invitees
+
         # Send email invitations to invitees
-        for email in invitees:
-            send_invitation_email(email, room.name, start_time, end_time, purpose)
+        for email in invitee_emails:
+            send_invitation_email(email, user, room, start_time, end_time, purpose)
 
         return jsonify({"message": "Meeting scheduled successfully, invitations sent", "meeting_id": new_meeting.id}), 201
 
@@ -151,21 +204,6 @@ def room_schedule(room_id):
         schedule.append(time_slot)
 
     return render_template('room.html', room=room, schedule=schedule, users=users)
-
-
-
-
-def send_invitation_email(recipient_email, room_name, start_time, end_time, purpose):
-    msg = Message(
-        'You are invited to a meeting',
-        sender='your-email@example.com',
-        recipients=[recipient_email]
-    )
-    msg.body = (f"You have been invited to a meeting.\n"
-                f"Room: {room_name}\n"
-                f"Time: {start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}\n"
-                f"Purpose: {purpose}")
-    mail.send(msg)
 
 def is_admin():
     return session.get('is_admin', False)
@@ -246,50 +284,8 @@ def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('admin_login'))
 
-#Email section
-def send_email(to, subject, body):
-    msg = Message(subject=subject,
-                  recipients=[to],
-                  body=body,
-                  sender=app.config['MAIL_USERNAME'])
-    with app.app_context():
-        mail.send(msg)
-
-def send_invitation_email(email, room_name, start_time, end_time, purpose):
-    subject = "Meeting Invitation"
-    body = f"""
-    Dear User,
-
-    You are invited to a meeting in the room {room_name}.
-
-    Purpose: {purpose}
-    Start Time: {start_time.strftime('%H:%M')}
-    End Time: {end_time.strftime('%H:%M')}
-
-    Please confirm your attendance.
-
-    Best regards,
-    Your Company
-    """
-    send_email(email, subject, body)
-
-
-@app.route('/invite', methods=['POST'])
-def invite_users():
-    user_ids = request.form.getlist('selected_users')  # List of selected user IDs
-    meeting_info = request.form['meeting_info']  # Info about the meeting
-
-    for user_id in user_ids:
-        user = User.query.get(user_id)  # Fetch user details from the database
-        if user and user.email:  # Check if the user has a valid email
-            send_invitation_email(user.email, meeting_info)
-    
-    flash('Invitations sent successfully!')
-    return redirect(url_for('manage_users'))
-
-
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
+    #with app.app_context():
+        #db.create_all()
     app.run(debug=True)
