@@ -50,7 +50,8 @@ class Meeting(db.Model):
 
 @app.route('/static/service-worker.js')
 def service_worker():
-    return send_from_directory('static', 'service-worker.js', mimetype='application/javascript')
+    return app.send_static_file('service-worker.js'), 200, {'Content-Type': 'application/javascript'}
+
 
 @app.route('/')
 def rooms():
@@ -284,7 +285,7 @@ def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('admin_login'))
 
-
 if __name__ == '__main__':
-    app.run(ssl_context='adhoc', debug=True, host='0.0.0.0')
+    app.run(ssl_context=('server.cert', 'server.key'), debug=True, host='0.0.0.0')
+
 
