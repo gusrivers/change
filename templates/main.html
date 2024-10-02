@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rooms</title>
+    <title>Salas</title>
+    <link rel="manifest" href="/static/manifest.json">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='cssmain.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#000000">
 </head>
 <body>
     <header>
@@ -14,7 +17,7 @@
     </header>
     
     <h1>Salas disponíveis</h1>
-
+    
     <div id="rooms-container">
         {% for room in rooms %}
         <div class="room-card" onclick="window.location.href='/room/{{ room.id }}/schedule'">
@@ -25,4 +28,16 @@
         {% endfor %}
     </div>
 </body>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/static/service-worker.js')
+    .then((registration) => {
+      console.log('Service Worker registered with scope:', registration.scope);
+    })
+    .catch((error) => {
+      console.error('Service Worker registration failed:', error);
+    });
+}
+
+</script>
 </html>

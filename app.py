@@ -1,18 +1,20 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, time
 from functools import wraps
 import os
+from flask_talisman import Talisman
 from flask_mail import Mail, Message
 #import smtplib
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/sala'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'gutiiz.tavuu@gmail.com'
-app.config['MAIL_PASSWORD'] = 'nnhicreqlautstni'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 mail = Mail(app)
 db = SQLAlchemy(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
@@ -46,6 +48,10 @@ class Meeting(db.Model):
 
     room = db.relationship('Room', backref=db.backref('meetings', lazy=True))
 
+@app.route('/static/service-worker.js')
+def service_worker():
+    return send_from_directory('static', 'service-worker.js', mimetype='application/javascript')
+
 @app.route('/')
 def rooms():
     rooms = Room.query.all()
@@ -75,7 +81,7 @@ def create_room():
 
 def send_invitation_email(email, user, room, start_time, end_time, purpose):
     print(f"Sending email for room: {room.name} by {user.username}")  # Debugging
-    subject = f"Meeting Invitation: {purpose} at {start_time.strftime('%H:%M')}"
+    subject = f"Convite de reunião para {purpose} às {start_time.strftime('%H:%M')}"
     body = (f"Você foi convidado(a) por {user.username} para a reunião com motivo de: {purpose} "
             f"na sala {room.name} às {start_time.strftime('%H:%M')}.\n\n"
             f"Sala: {room.name}\nHorário: {start_time.strftime('%H:%M')}\n")
@@ -214,7 +220,7 @@ def admin_login():
             session['is_admin'] = user.is_admin
             return redirect(url_for('admin_users'))
         
-        flash('Usuário e senha incorretos ou usuário não permitido!')  # Flash message if login fails or user is not an admin
+        flash('Usuário e senha incorretos ou usuário não permitido!')
         return redirect(url_for('admin_login'))
         
     return render_template('admin_login.html')
@@ -280,6 +286,5 @@ def admin_logout():
 
 
 if __name__ == '__main__':
-    #with app.app_context():
-        #db.create_all()
-    app.run(debug=True)
+    app.run(ssl_context='adhoc', debug=True, host='0.0.0.0')
+
