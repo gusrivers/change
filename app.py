@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash, send_from_directory
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash, send_from_directory, send_file
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, time
 from functools import wraps
 import os
+from flask_cors import CORS
 from flask_talisman import Talisman
 from flask_mail import Mail, Message
 #import smtplib
@@ -17,6 +18,7 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 mail = Mail(app)
 db = SQLAlchemy(app)
+CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
 print(app.secret_key)
 
@@ -52,6 +54,9 @@ class Meeting(db.Model):
 def service_worker():
     return app.send_static_file('service-worker.js'), 200, {'Content-Type': 'application/javascript'}
 
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
 
 @app.route('/')
 def rooms():
@@ -286,6 +291,10 @@ def admin_logout():
     return redirect(url_for('admin_login'))
 
 if __name__ == '__main__':
-    app.run(ssl_context=('server.cert', 'server.key'), debug=True, host='0.0.0.0')
+    app.run(ssl_context=('localhost.crt', 'localhost.key'), debug=True, host='0.0.0.0')
+
+
+
+
 
 
