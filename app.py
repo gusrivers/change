@@ -27,7 +27,8 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 mail = Mail(app)
 db = SQLAlchemy(app)
-#CORS(app)
+CORS(app)
+Talisman(app, force_https=True)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
 print(app.secret_key)
 
@@ -79,6 +80,8 @@ def before_request():
 def rooms():
     rooms = Room.query.all()
     return render_template('main.html', rooms=rooms)
+
+
 
 @app.route('/create_room', methods=['POST'])
 def create_room():
@@ -343,7 +346,7 @@ def admin_logout():
 
 
 if __name__ == '__main__':
-    app.run(ssl_context=('server.crt', 'server.key'), debug=True, host='0.0.0.0', port=8000)
+    app.run(ssl_context=('server.crt', 'server.key'), debug=True, host='0.0.0.0', port=5000)
 
 
 
