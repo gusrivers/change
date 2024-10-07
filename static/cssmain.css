@@ -84,3 +84,12 @@ main {
     margin: 5px 0;
     color: #cccccc;
 }
+.sidebar {
+    width: 60px;
+    height: 100vh;
+    position: fixed;
+    background-color: #343a40;
+    transition: width 0.3s;
+    padding-top: 100px !important;
+    z-index: 2;
+}

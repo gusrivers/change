@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, time
 from functools import wraps
 import os
+from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from flask_talisman import Talisman
 from flask_mail import Mail, Message
@@ -10,6 +11,12 @@ from flask_mail import Mail, Message
 
 
 app = Flask(__name__)
+UPLOAD_FOLDER = 'static/images/'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/sala'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -33,6 +40,7 @@ class User(db.Model):
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    image = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     capacity = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), default='Disponível')
@@ -105,9 +113,43 @@ def send_email(to, subject, body):
 
 from datetime import datetime, time, timedelta
 
+@app.route('/upload_room_image/<int:room_id>', methods=['POST'])
+def upload_room_image(room_id):
+    room = Room.query.get(room_id)
+
+    if room is None:
+        # Handle the case where the room was not found in the database
+        flash("Room not found", "error")
+        return redirect(url_for('main.html'))
+
+    if 'image' not in request.files:
+        flash('No file part', 'error')
+        return redirect(request.url)
+
+    file = request.files['image']
+
+    if file.filename == '':
+        flash('No selected file', 'error')
+        return redirect(request.url)
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        # Save the filename to the room's image field
+        room.image = filename
+        db.session.commit()
+
+        flash('Image successfully uploaded', 'success')
+        return redirect(url_for('view_room', room_id=room.id))
+    else:
+        flash('Invalid file format', 'error')
+        return redirect(request.url)
+
 @app.route('/room/<int:room_id>/schedule', methods=['GET' ,'POST'])
 def room_schedule(room_id):
     room = Room.query.get_or_404(room_id)
+    room_image = room.image
 
     if request.method == 'POST':
         data = request.form
@@ -209,7 +251,7 @@ def room_schedule(room_id):
                 break
         schedule.append(time_slot)
 
-    return render_template('room.html', room=room, schedule=schedule, users=users)
+    return render_template('room.html', room=room, schedule=schedule, users=users, room_image=room_image)
 
 def is_admin():
     return session.get('is_admin', False)

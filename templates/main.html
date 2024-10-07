@@ -11,7 +11,7 @@
 </head>
 <script type="text/javascript" src="/static/service-worker.js"></script>
 <script>
-    if ('serviceWorker' in navigator) {
+    if ('service-worker.js' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/static/service-worker.js')
                 .then(registration => {
@@ -30,7 +30,7 @@
     </header>
     
     <h1>Salas disponíveis</h1>
-    
+
     <div id="rooms-container">
         {% for room in rooms %}
         <div class="room-card" onclick="window.location.href='/room/{{ room.id }}/schedule'">

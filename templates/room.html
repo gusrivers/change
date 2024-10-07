@@ -10,7 +10,21 @@
     <header>
         <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo" onclick="window.location.href='/'">
     </header>
+
     <h1>{{ room.name }}</h1>
+    <!--
+    <div class="room-image-container">
+    <img src="{{ url_for('static', filename='images/' + (room_image if room_image else 'default_image.jpg')) }}" 
+    alt="{{ room.name }} Image" class="room-image">
+
+    </div>
+    <form action="/upload-room-image" method="POST" enctype="multipart/form-data">
+        <label for="image">Upload Room Image:</label>
+        <input type="file" id="image" name="image">
+        <input type="submit" value="Upload Image">
+    </form> -->
+    
+
     <div class="schedule-container">
         {% for slot in schedule %}
         <div class="schedule-slot {{ slot.status.lower() }}" onclick="openBookingModal('{{ slot.time }}', '{{ slot.status }}')">
@@ -26,7 +40,8 @@
         </div>
         {% endfor %}
     </div>
-        <div id="bookingModal" class="modal" style="display: none;">
+
+    <div id="bookingModal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close" onclick="closeBookingModal()">&times;</span>
             <h2>Agendar horário às <span id="modalTime"></span></h2>
@@ -46,12 +61,10 @@
                     <option value="{{ user.email }}">{{ user.username }}</option>
                     {% endfor %}
                 </select>
-                <!-- Hidden field to capture start time if necessary -->
                 <input type="hidden" id="start_time" name="start_time">
             
                 <button type="button" onclick="confirmBooking()">Confirmar agendamento</button>
             </form>
-            
         </div>
     </div>
 
@@ -85,9 +98,9 @@
                     username: username,
                     password: password,
                     purpose: purpose,
-                    invitees: invitees.join(','),  // Send invitees as a comma-separated string
+                    invitees: invitees.join(','),
                     start_time: time,
-                    end_time: time, // Adjust if needed
+                    end_time: time,
                 }),
             })
             .then(response => response.json())
