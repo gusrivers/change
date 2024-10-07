@@ -3,8 +3,7 @@
   "short_name": "TDGI",
   "display": "standalone",
   "start_url": "/", 
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {

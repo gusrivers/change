@@ -7,6 +7,8 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from flask_talisman import Talisman
 from flask_mail import Mail, Message
+from pyngrok import ngrok
+
 #import smtplib
 
 
@@ -25,7 +27,7 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 mail = Mail(app)
 db = SQLAlchemy(app)
-CORS(app)
+#CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
 print(app.secret_key)
 
@@ -65,6 +67,13 @@ def service_worker():
 @app.route('/manifest.json')
 def manifest():
     return send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
+
+@app.before_request
+def before_request():
+    if request.is_secure == False:
+        url = request.url.replace("http://", "https://", 1)
+        return redirect(url, code=301)
+
 
 @app.route('/')
 def rooms():
@@ -332,8 +341,9 @@ def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('admin_login'))
 
+
 if __name__ == '__main__':
-    app.run(ssl_context=('localhost.crt', 'localhost.key'), host='0.0.0.0', port=8000)
+    app.run(ssl_context=('server.crt', 'server.key'), debug=True, host='0.0.0.0', port=8000)
 
 
 
