@@ -62,9 +62,9 @@ class Meeting(db.Model):
 def service_worker():
     return app.send_static_file('service-worker.js'), 200, {'Content-Type': 'application/javascript'}
 
-@app.route('/manifest.json')
+@app.route('/static/manifest.json')
 def manifest():
-    return send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
+    return app.send_static_file('manifest.json'), 200, {'Content-Type': 'application/javascript'}
 
 @app.route('/')
 def rooms():
@@ -333,7 +333,7 @@ def admin_logout():
     return redirect(url_for('admin_login'))
 
 if __name__ == '__main__':
-    app.run(ssl_context=('localhost.crt', 'localhost.key'), debug=True, host='0.0.0.0')
+    app.run(ssl_context=('localhost.crt', 'localhost.key'), host='0.0.0.0', port=8000)
 
 
 
