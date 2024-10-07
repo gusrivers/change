@@ -62,9 +62,9 @@ class Meeting(db.Model):
 def service_worker():
     return app.send_static_file('service-worker.js'), 200, {'Content-Type': 'application/javascript'}
 
-@app.route('/static/manifest.json')
+@app.route('/manifest.json')
 def manifest():
-    return app.send_static_file('manifest.json'), 200, {'Content-Type': 'application/javascript'}
+    return send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
 
 @app.route('/')
 def rooms():
