@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salas</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-    <link rel="stylesheet" href="{{ url_for('static', filename='cssmain.css') }}">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/static/cssmain.css">
     <meta name="theme-color" content="#ffffff">
 </head>
-<script type="text/javascript" src="/static/service-worker.js"></script>
-<script>
-    if ('service-worker.js' in navigator) {
+<script type="text/javascript">
+    // Register the service worker
+    if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/static/service-worker.js')
                 .then(registration => {
@@ -22,23 +22,54 @@
                 });
         });
     }
+
+    // Example: API call to the backend
+    function loadRooms() {
+        fetch('https://192.168.1.194:5000/')
+            .then(response => response.json())
+            .then(data => {
+                // Populate room data dynamically
+                const roomsContainer = document.getElementById('rooms-container');
+                data.rooms.forEach(room => {
+                    let roomCard = document.createElement('div');
+                    roomCard.className = 'room-card';
+                    roomCard.innerHTML = `<h2>${room.name}</h2><p>${room.description}</p><p>${room.capacity} Lugares</p>`;
+                    roomsContainer.appendChild(roomCard);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching rooms:', error);
+            });
+    }
+
+    // Call the function on page load
+    window.onload = loadRooms;
 </script>
 <body>
-    <header>
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo">
-        <img src="{{ url_for('static', filename='icon.png') }}" alt="Icon" class="header-icon" onclick="window.location.href='/admin/login'">
-    </header>
-    
-    <h1>Salas disponíveis</h1>
-
-    <div id="rooms-container">
-        {% for room in rooms %}
-        <div class="room-card" onclick="window.location.href='/room/{{ room.id }}/schedule'">
-            <h2>{{ room.name }}</h2>
-            <p>{{ room.description }}</p>
-            <p>{{ room.capacity }} Lugares</p>
+    <div class="sidebar">
+        <div class="logo-container">
+            <img src="/static/logo.png" alt="Company Logo" class="logo">
         </div>
-        {% endfor %}
+        <a href="#">
+            <img src="/static/homeico.png" alt="Home Icon"> 
+            <span>Início</span>
+        </a>
+        <a href="#">
+            <img src="/static/classicon.png" alt="Salas Icon"> 
+            <span>Salas</span>
+        </a>
+        <a href="#">
+            <img src="/static/scheduleicon.png" alt="Schedule Icon"> 
+            <span>Agendamentos</span>
+        </a>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+        <h1>Salas disponíveis</h1>
+        <div id="rooms-container">
+            <!-- Rooms will be populated dynamically here -->
+        </div>
     </div>
 </body>
 </html>
