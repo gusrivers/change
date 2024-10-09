@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salas</title>
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/static/manifest.json">
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/cssmain.css">
     <meta name="theme-color" content="#ffffff">
@@ -25,15 +25,20 @@
 
     // Example: API call to the backend
     function loadRooms() {
-        fetch('https://192.168.1.194:5000/api/rooms')
+        fetch('https://192.168.1.194:5000/')
             .then(response => response.json())
             .then(data => {
                 // Populate room data dynamically
                 const roomsContainer = document.getElementById('rooms-container');
-                data.rooms.forEach(room => {
+                data.forEach(room => {
                     let roomCard = document.createElement('div');
                     roomCard.className = 'room-card';
-                    roomCard.innerHTML = `<h2>${room.name}</h2><p>${room.description}</p><p>${room.capacity} Lugares</p>`;
+                    roomCard.innerHTML = `
+                        <h2>${room.name}</h2>
+                        <p>${room.description}</p>
+                        <p>${room.capacity} Lugares</p>
+                        <a href="/room/${room.id}/schedule" class="schedule-link">Schedule a Meeting</a>
+                        `;
                     roomsContainer.appendChild(roomCard);
                 });
             })
