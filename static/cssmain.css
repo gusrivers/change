@@ -85,11 +85,82 @@ main {
     color: #cccccc;
 }
 .sidebar {
-    width: 60px;
-    height: 100vh;
+    height: 100%;
+    width: 60px; /* Initially thin bar */
     position: fixed;
+    top: 0;
+    left: 0;
     background-color: #343a40;
-    transition: width 0.3s;
-    padding-top: 100px !important;
-    z-index: 2;
+    overflow-x: hidden;
+    transition: width 0.5s; /* Smooth transition */
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align items to the left */
+    padding-left: 10px; /* Add space between icons and sidebar border */
+}
+
+/* Sidebar expands when hovered */
+.sidebar:hover {
+    width: 250px; /* Expand to full width on hover */
+}
+
+/* Sidebar items (icons + names) */
+.sidebar a {
+    padding: 15px;
+    text-decoration: none;
+    font-size: 18px;
+    color: #818181;
+    display: flex;
+    align-items: center; /* Center icons and text vertically */
+    width: 100%;
+    transition: 0.3s;
+    white-space: nowrap; /* Prevent text wrapping */
+    margin-bottom: 10px; /* Add space between each icon */
+}
+
+/* Sidebar icons (logos) */
+.sidebar a img {
+    width: 30px; /* Logo size */
+    height: 30px;
+    margin-right: 10px; /* Space between logo and text */
+}
+
+/* Hide text initially */
+.sidebar a span {
+    display: none; /* Hidden when not hovered */
+}
+
+/* Show the name on hover */
+.sidebar:hover a span {
+    display: inline-block; /* Show text on hover */
+}
+
+/* Main content */
+.main-content {
+    margin-left: 60px; /* Space for the sidebar */
+    padding: 16px;
+    transition: margin-left 0.5s;
+}
+
+.sidebar:hover ~ .main-content {
+    margin-left: 250px; /* Move content when sidebar is expanded */
+}
+
+/* Centered logo inside sidebar */
+.logo-container {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    width: 100%;
+}
+
+.logo-container img {
+    width: 40px; /* Small logo for collapsed state */
+    height: auto;
+    transition: width 0.5s ease;
+}
+
+.sidebar:hover .logo-container img {
+    width: 150px; /* Larger logo when sidebar is expanded */
 }
