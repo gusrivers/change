@@ -1,0 +1,93 @@
+<script>
+    // Function to load the room's schedule
+    function loadRoomSchedule(roomId) {
+        fetch(`/room/${roomId}/schedule`, {
+            method: 'GET',
+        })
+        .then(response => response.json())
+        .then(data => {
+            const scheduleContainer = document.getElementById('schedule-container');
+            scheduleContainer.innerHTML = ''; // Clear existing schedule
+
+            data.schedule.forEach(slot => {
+                const slotElement = document.createElement('div');
+                slotElement.className = `schedule-slot ${slot.status.toLowerCase()}`;
+                slotElement.innerHTML = `
+                    <span class="time">${slot.time}</span>
+                    ${slot.status.toLowerCase() === 'occupied' ? 
+                        `<div class="details">
+                            <p>Agendado por: ${slot.meeting.booked_by}</p>
+                            <p>Motivo: ${slot.meeting.purpose}</p>
+                        </div>` : 
+                        `<span>${slot.status}</span>`
+                    }
+                `;
+                scheduleContainer.appendChild(slotElement);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching schedule:', error);
+        });
+    }
+
+    // Call the function on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const roomId = {{ room.id }}; // Room ID dynamically passed from Flask
+        loadRoomSchedule(roomId);
+    });
+</script>
+
+
+
+<script>
+    // Function to open the booking modal
+    function openBookingModal(time, status) {
+        if (status.toLowerCase() === 'disponível') {
+            document.getElementById('modalTime').textContent = time;
+            document.getElementById('bookingModal').style.display = 'block';
+        } else {
+            alert('Esse horário não está disponível.');
+        }
+    }
+
+    // Function to send booking data (POST Request)
+    function confirmBooking() {
+        const time = document.getElementById('modalTime').textContent;
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const purpose = document.getElementById('purpose').value;
+        const invitees = Array.from(document.getElementById('invitees').selectedOptions).map(option => option.value);
+
+        fetch(`/room/{{ room.id }}/schedule`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                username: username,
+                password: password,
+                purpose: purpose,
+                invitees: invitees.join(','),
+                start_time: time,
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                alert('Horário agendado com sucesso!');
+                closeBookingModal();
+                loadRoomSchedule({{ room.id }}); // Refresh the schedule after booking
+            }
+        })
+        .catch(error => {
+            console.error('Error booking room:', error);
+        });
+    }
+
+    // Function to close the booking modal
+    function closeBookingModal() {
+        document.getElementById('bookingModal').style.display = 'none';
+    }
+</script>
