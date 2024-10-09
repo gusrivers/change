@@ -39,8 +39,10 @@
                         <p>${room.capacity} Lugares</p>
                         `;
                         roomCard.onclick = () => {
-                            window.location.href = `/room/${room.id}/schedule`;
-                        }
+                            const scheduleUrl = `/room/${room.id}/schedule`;
+                            console.log(`Navigating to: ${scheduleUrl}`); // Log the URL for debugging
+                            window.location.href = scheduleUrl; // Redirect to the schedule
+                        };
                     roomsContainer.appendChild(roomCard);
                 });
                 
