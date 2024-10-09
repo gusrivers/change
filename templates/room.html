@@ -13,15 +13,6 @@
 
     <h1>Agendar Sala</h1>
 
-    <div id="roomContainer">
-        <select id="roomSelect" onchange="loadRoomSchedule()">
-            <!-- Room options will be populated here -->
-        </select>
-    </div>
-
-    <div class="schedule-container" id="scheduleContainer">
-        <!-- Schedule slots will be populated here -->
-    </div>
 
     <div id="bookingModal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -51,53 +42,44 @@
     </div>
 
     <script>
-        // Load rooms on page load
-        document.addEventListener('DOMContentLoaded', loadRooms);
 
-        function loadRooms() {
-            fetch('https://192.168.1.194:5000/')  // Adjust this API endpoint to fetch rooms
-                .then(response => response.json())
-                .then(data => {
-                    const roomSelect = document.getElementById('roomSelect');
-                    data.rooms.forEach(room => {
-                        const option = document.createElement('option');
-                        option.value = room.id;
-                        option.textContent = room.name;
-                        roomSelect.appendChild(option);
-                    });
-                })
-                .catch(error => console.error('Error loading rooms:', error));
-        }
+        // Get the room ID from the URL query parameters
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('id'); // Extract room ID from the URL
 
-        function loadRoomSchedule() {
-            const roomId = document.getElementById('roomSelect').value;
+if (roomId) {
+    loadRoomSchedule(roomId); // Call the function to load the schedule based on roomId
+}
 
-            fetch(`/room/${roomId}/schedule`)  // Fetch schedule for the selected room
-                .then(response => response.json())
-                .then(data => {
-                    const scheduleContainer = document.getElementById('scheduleContainer');
-                    scheduleContainer.innerHTML = '';  // Clear previous schedule
+function loadRoomSchedule(roomId) {
+    const scheduleUrl = `https://192.168.1.194:5000/room/${roomId}/schedule`;
+    console.log(`Fetching schedule from: ${scheduleUrl}`); // Log the URL
+    fetch(scheduleUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Schedule data:', data); // Log the fetched data
+            // Update the DOM to display schedule details
+            const scheduleContainer = document.getElementById('schedule-container'); // Make sure this exists in room.html
+            scheduleContainer.innerHTML = ''; // Clear previous schedule
 
-                    data.schedule.forEach(slot => {
-                        const slotDiv = document.createElement('div');
-                        slotDiv.className = `schedule-slot ${slot.status.toLowerCase()}`;
-                        slotDiv.onclick = () => openBookingModal(slot.time, slot.status);
-                        slotDiv.innerHTML = `<span class="time">${slot.time}</span>`;
-
-                        if (slot.status.toLowerCase() === 'occupied') {
-                            slotDiv.innerHTML += `<div class="details">
-                                                    <p>Agendado por: ${slot.meeting.booked_by}</p>
-                                                    <p>Motivo: ${slot.meeting.purpose}</p>
-                                                </div>`;
-                        } else {
-                            slotDiv.innerHTML += `<span>${slot.status}</span>`;
-                        }
-
-                        scheduleContainer.appendChild(slotDiv);
-                    });
-                })
-                .catch(error => console.error('Error loading schedule:', error));
-        }
+            // Populate the schedule
+            data.schedule.forEach(slot => {
+                const slotElement = document.createElement('div');
+                slotElement.innerHTML = `
+                    <p>${slot.time}: ${slot.status}</p>
+                    ${slot.meeting ? `
+                        <p>Booked By: ${slot.meeting.booked_by}</p>
+                        <p>Purpose: ${slot.meeting.purpose}</p>
+                        <p>Time: ${slot.meeting.start_time} - ${slot.meeting.end_time}</p>
+                    ` : ''}
+                `;
+                scheduleContainer.appendChild(slotElement);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching room schedule:', error);
+        });
+}
 
         function openBookingModal(time, status) {
             if (status.toLowerCase() === 'disponível') {

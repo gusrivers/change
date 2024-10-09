@@ -25,61 +25,32 @@
 
     // Example: API call to the backend
     function loadRooms() {
-    fetch('https://192.168.1.194:5000/')
-        .then(response => response.json())
-        .then(data => {
-            const roomsContainer = document.getElementById('rooms-container');
-            data.forEach(room => {
-                let roomCard = document.createElement('div');
-                roomCard.className = 'room-card';
-                roomCard.innerHTML = `
-                    <h2>${room.name}</h2>
-                    <p>${room.description}</p>
-                    <p>${room.capacity} Lugares</p>
-                `;
-                roomCard.onclick = () => {
-                    loadRoomSchedule(room.id); // Call the new function to load the schedule
-                };
-                roomsContainer.appendChild(roomCard);
+        fetch('https://192.168.1.194:5000/')
+            .then(response => response.json())
+            .then(data => {
+                // Populate room data dynamically
+                const roomsContainer = document.getElementById('rooms-container');
+                data.forEach(room => {
+                    let roomCard = document.createElement('div');
+                    roomCard.className = 'room-card';
+                    roomCard.innerHTML = `
+                        <h2>${room.name}</h2>
+                        <p>${room.description}</p>
+                        <p>${room.capacity} Lugares</p>
+                        `;
+                        roomCard.onclick = () => {
+                            const scheduleUrl = `/room/${room.id}/schedule`;
+                            console.log(`Navigating to: ${scheduleUrl}`); // Log the URL for debugging
+                            window.location.href = scheduleUrl; // Redirect to the schedule
+                        };
+                    roomsContainer.appendChild(roomCard);
+                });
+                
+            })
+            .catch(error => {
+                console.error('Error fetching rooms:', error);
             });
-        })
-        .catch(error => {
-            console.error('Error fetching rooms:', error);
-        });
-}
-
-function loadRoomSchedule(roomId) {
-    const scheduleUrl = `https://192.168.1.194:5000/room/${roomId}/schedule`;
-    fetch(scheduleUrl)
-        .then(response => response.json())
-        .then(data => {
-            // Assuming you have an element to display the schedule, for example, `#schedule-container`
-            const scheduleContainer = document.getElementById('schedule-container');
-            scheduleContainer.innerHTML = ''; // Clear previous schedule
-
-            // Populate schedule content
-            const roomTitle = document.createElement('h2');
-            roomTitle.innerText = `Schedule for ${data.room}`;
-            scheduleContainer.appendChild(roomTitle);
-
-            data.schedule.forEach(slot => {
-                const slotElement = document.createElement('div');
-                slotElement.innerHTML = `
-                    <p>${slot.time}: ${slot.status}</p>
-                    ${slot.meeting ? `
-                        <p>Booked By: ${slot.meeting.booked_by}</p>
-                        <p>Purpose: ${slot.meeting.purpose}</p>
-                        <p>Time: ${slot.meeting.start_time} - ${slot.meeting.end_time}</p>
-                    ` : ''}
-                `;
-                scheduleContainer.appendChild(slotElement);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching room schedule:', error);
-        });
-}
-
+    }
 
     // Call the function on page load
     window.onload = loadRooms;
