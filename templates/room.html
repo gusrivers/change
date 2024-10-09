@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Agendamento de salas</title>
-    <link rel="icon" href="/static/cssroom.css" type="image/x-icon">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/cssroom.css">
 </head>
 <body>
@@ -12,7 +12,9 @@
     </header>
 
     <h1>Agendar Sala</h1>
-
+    <div id="schedule-container">
+        <!-- Schedule will be populated here -->
+    </div>
 
     <div id="bookingModal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -30,9 +32,7 @@
                 
                 <label for="invitees">Convidar usuários:</label>
                 <select id="invitees" name="invitees" multiple class="custom-select">
-                    {% for user in users %}
-                    <option value="{{ user.email }}">{{ user.username }}</option>
-                    {% endfor %}
+                    <!-- Invitees options will be populated here -->
                 </select>
                 <input type="hidden" id="start_time" name="start_time">
                 
@@ -42,44 +42,48 @@
     </div>
 
     <script>
+        // Get the room ID from the URL
+        const roomId = window.location.pathname.split('/')[2]; // Adjusted to get room ID from the URL
 
-        // Get the room ID from the URL query parameters
-const urlParams = new URLSearchParams(window.location.search);
-const roomId = urlParams.get('id'); // Extract room ID from the URL
+        // Load the room schedule on page load
+        window.onload = function() {
+            loadRoomSchedule(roomId);
+        };
 
-if (roomId) {
-    loadRoomSchedule(roomId); // Call the function to load the schedule based on roomId
-}
+        function loadRoomSchedule(roomId) {
+            const scheduleUrl = `https://192.168.1.194:5000/room/${roomId}/schedule`;
+            console.log(`Fetching schedule from: ${scheduleUrl}`); // Log the URL for debugging
+            
+            fetch(scheduleUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Schedule data:', data); // Log the fetched data
+                    const scheduleContainer = document.getElementById('schedule-container');
+                    scheduleContainer.innerHTML = ''; // Clear previous schedule
 
-function loadRoomSchedule(roomId) {
-    const scheduleUrl = `https://192.168.1.194:5000/room/${roomId}/schedule`;
-    console.log(`Fetching schedule from: ${scheduleUrl}`); // Log the URL
-    fetch(scheduleUrl)
-        .then(response => response.json())
-        .then(data => {
-            console.log('Schedule data:', data); // Log the fetched data
-            // Update the DOM to display schedule details
-            const scheduleContainer = document.getElementById('schedule-container'); // Make sure this exists in room.html
-            scheduleContainer.innerHTML = ''; // Clear previous schedule
-
-            // Populate the schedule
-            data.schedule.forEach(slot => {
-                const slotElement = document.createElement('div');
-                slotElement.innerHTML = `
-                    <p>${slot.time}: ${slot.status}</p>
-                    ${slot.meeting ? `
-                        <p>Booked By: ${slot.meeting.booked_by}</p>
-                        <p>Purpose: ${slot.meeting.purpose}</p>
-                        <p>Time: ${slot.meeting.start_time} - ${slot.meeting.end_time}</p>
-                    ` : ''}
-                `;
-                scheduleContainer.appendChild(slotElement);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching room schedule:', error);
-        });
-}
+                    // Populate the schedule
+                    data.schedule.forEach(slot => {
+                        const slotElement = document.createElement('div');
+                        slotElement.innerHTML = `
+                            <p>${slot.time}: ${slot.status}</p>
+                            ${slot.meeting ? `
+                                <p>Booked By: ${slot.meeting.booked_by}</p>
+                                <p>Purpose: ${slot.meeting.purpose}</p>
+                                <p>Time: ${slot.meeting.start_time} - ${slot.meeting.end_time}</p>
+                            ` : ''}
+                        `;
+                        scheduleContainer.appendChild(slotElement);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching room schedule:', error);
+                });
+        }
 
         function openBookingModal(time, status) {
             if (status.toLowerCase() === 'disponível') {
@@ -94,6 +98,9 @@ function loadRoomSchedule(roomId) {
             document.getElementById('bookingModal').style.display = 'none';
         }
 
+        function confirmBooking() {
+            // Existing confirmBooking logic...
+        }
         function confirmBooking() {
             const roomId = document.getElementById('roomSelect').value;
             const time = document.getElementById('modalTime').textContent;
