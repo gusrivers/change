@@ -25,7 +25,7 @@
 
     // Example: API call to the backend
     function loadRooms() {
-        fetch('https://192.168.1.194:5000/')
+        fetch('https://192.168.1.194:5000/api/rooms')
             .then(response => response.json())
             .then(data => {
                 // Populate room data dynamically
