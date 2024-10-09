@@ -1,93 +1,154 @@
-<script>
-    // Function to load the room's schedule
-    function loadRoomSchedule(roomId) {
-        fetch(`/room/${roomId}/schedule`, {
-            method: 'GET',
-        })
-        .then(response => response.json())
-        .then(data => {
-            const scheduleContainer = document.getElementById('schedule-container');
-            scheduleContainer.innerHTML = ''; // Clear existing schedule
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamento de salas</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='cssroom.css') }}">
+</head>
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo" onclick="window.location.href='/'">
+    </header>
 
-            data.schedule.forEach(slot => {
-                const slotElement = document.createElement('div');
-                slotElement.className = `schedule-slot ${slot.status.toLowerCase()}`;
-                slotElement.innerHTML = `
-                    <span class="time">${slot.time}</span>
-                    ${slot.status.toLowerCase() === 'occupied' ? 
-                        `<div class="details">
-                            <p>Agendado por: ${slot.meeting.booked_by}</p>
-                            <p>Motivo: ${slot.meeting.purpose}</p>
-                        </div>` : 
-                        `<span>${slot.status}</span>`
-                    }
-                `;
-                scheduleContainer.appendChild(slotElement);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching schedule:', error);
-        });
-    }
+    <h1>Agendar Sala</h1>
 
-    // Call the function on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        const roomId = {{ room.id }}; // Room ID dynamically passed from Flask
-        loadRoomSchedule(roomId);
-    });
-</script>
+    <div id="roomContainer">
+        <select id="roomSelect" onchange="loadRoomSchedule()">
+            <!-- Room options will be populated here -->
+        </select>
+    </div>
 
+    <div class="schedule-container" id="scheduleContainer">
+        <!-- Schedule slots will be populated here -->
+    </div>
 
+    <div id="bookingModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeBookingModal()">&times;</span>
+            <h2>Agendar horário às <span id="modalTime"></span></h2>
+            <form id="bookingForm">
+                <label for="username">Usuário:</label>
+                <input type="text" id="username" name="username" required>
+                
+                <label for="password">Senha:</label>
+                <input type="password" id="password" name="password" required>
+                
+                <label for="purpose">Motivo:</label>
+                <input type="text" id="purpose" name="purpose" required>
+                
+                <label for="invitees">Convidar usuários:</label>
+                <select id="invitees" name="invitees" multiple class="custom-select">
+                    {% for user in users %}
+                    <option value="{{ user.email }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="start_time" name="start_time">
+                
+                <button type="button" onclick="confirmBooking()">Confirmar agendamento</button>
+            </form>
+        </div>
+    </div>
 
-<script>
-    // Function to open the booking modal
-    function openBookingModal(time, status) {
-        if (status.toLowerCase() === 'disponível') {
-            document.getElementById('modalTime').textContent = time;
-            document.getElementById('bookingModal').style.display = 'block';
-        } else {
-            alert('Esse horário não está disponível.');
+    <script>
+        // Load rooms on page load
+        document.addEventListener('DOMContentLoaded', loadRooms);
+
+        function loadRooms() {
+            fetch('/api/rooms')  // Adjust this API endpoint to fetch rooms
+                .then(response => response.json())
+                .then(data => {
+                    const roomSelect = document.getElementById('roomSelect');
+                    data.rooms.forEach(room => {
+                        const option = document.createElement('option');
+                        option.value = room.id;
+                        option.textContent = room.name;
+                        roomSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error loading rooms:', error));
         }
-    }
 
-    // Function to send booking data (POST Request)
-    function confirmBooking() {
-        const time = document.getElementById('modalTime').textContent;
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const purpose = document.getElementById('purpose').value;
-        const invitees = Array.from(document.getElementById('invitees').selectedOptions).map(option => option.value);
+        function loadRoomSchedule() {
+            const roomId = document.getElementById('roomSelect').value;
 
-        fetch(`/room/{{ room.id }}/schedule`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
+            fetch(`/room/${roomId}/schedule`)  // Fetch schedule for the selected room
+                .then(response => response.json())
+                .then(data => {
+                    const scheduleContainer = document.getElementById('scheduleContainer');
+                    scheduleContainer.innerHTML = '';  // Clear previous schedule
+
+                    data.schedule.forEach(slot => {
+                        const slotDiv = document.createElement('div');
+                        slotDiv.className = `schedule-slot ${slot.status.toLowerCase()}`;
+                        slotDiv.onclick = () => openBookingModal(slot.time, slot.status);
+                        slotDiv.innerHTML = `<span class="time">${slot.time}</span>`;
+
+                        if (slot.status.toLowerCase() === 'occupied') {
+                            slotDiv.innerHTML += `<div class="details">
+                                                    <p>Agendado por: ${slot.meeting.booked_by}</p>
+                                                    <p>Motivo: ${slot.meeting.purpose}</p>
+                                                </div>`;
+                        } else {
+                            slotDiv.innerHTML += `<span>${slot.status}</span>`;
+                        }
+
+                        scheduleContainer.appendChild(slotDiv);
+                    });
+                })
+                .catch(error => console.error('Error loading schedule:', error));
+        }
+
+        function openBookingModal(time, status) {
+            if (status.toLowerCase() === 'disponível') {
+                document.getElementById('modalTime').textContent = time;
+                document.getElementById('bookingModal').style.display = 'block';
+            } else {
+                alert('Esse horário não está disponível.');
+            }
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+        }
+
+        function confirmBooking() {
+            const roomId = document.getElementById('roomSelect').value;
+            const time = document.getElementById('modalTime').textContent;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const purpose = document.getElementById('purpose').value;
+            const invitees = Array.from(document.getElementById('invitees').selectedOptions).map(option => option.value);
+
+            // Calculate the start time
+            const startTime = time.split(':')[0]; // Extract hour from time
+            const bodyData = new URLSearchParams({
                 username: username,
                 password: password,
                 purpose: purpose,
                 invitees: invitees.join(','),
-                start_time: time,
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert(data.error);
-            } else {
-                alert('Horário agendado com sucesso!');
-                closeBookingModal();
-                loadRoomSchedule({{ room.id }}); // Refresh the schedule after booking
-            }
-        })
-        .catch(error => {
-            console.error('Error booking room:', error);
-        });
-    }
+                start_time: startTime
+            });
 
-    // Function to close the booking modal
-    function closeBookingModal() {
-        document.getElementById('bookingModal').style.display = 'none';
-    }
-</script>
+            fetch(`/room/${roomId}/schedule`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: bodyData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert('Horário agendado com sucesso!');
+                    closeBookingModal();
+                    loadRoomSchedule();  // Refresh the schedule
+                }
+            })
+            .catch(error => console.error('Error confirming booking:', error));
+        }
+    </script>
+</body>
+</html>
