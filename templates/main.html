@@ -30,10 +30,15 @@
             .then(data => {
                 // Populate room data dynamically
                 const roomsContainer = document.getElementById('rooms-container');
-                data.rooms.forEach(room => {
+                data.forEach(room => {
                     let roomCard = document.createElement('div');
                     roomCard.className = 'room-card';
-                    roomCard.innerHTML = `<h2>${room.name}</h2><p>${room.description}</p><p>${room.capacity} Lugares</p>`;
+                    roomCard.innerHTML = `
+                        <h2>${room.name}</h2>
+                        <p>${room.description}</p>
+                        <p>${room.capacity} Lugares</p>
+                        <a href="/room/${room.id}/schedule" class="schedule-link">Schedule a Meeting</a>
+                        `;
                     roomsContainer.appendChild(roomCard);
                 });
             })
