@@ -37,10 +37,13 @@
                         <h2>${room.name}</h2>
                         <p>${room.description}</p>
                         <p>${room.capacity} Lugares</p>
-                        <a href="/room/${room.id}/schedule" class="schedule-link">Schedule a Meeting</a>
                         `;
+                        roomCard.onclick = () => {
+                            window.location.href = `/room/${room.id}/schedule`;
+                        }
                     roomsContainer.appendChild(roomCard);
                 });
+                
             })
             .catch(error => {
                 console.error('Error fetching rooms:', error);
