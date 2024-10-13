@@ -146,7 +146,7 @@ def upload_room_image(room_id):
         flash('Invalid file format', 'error')
         return redirect(request.url)
 
-@app.route('/room/<int:room_id>/schedule', methods=['GET' ,'POST'])
+@app.route('/room/<int:room_id>/schedule', methods=['GET', 'POST'])
 def room_schedule(room_id):
     room = Room.query.get_or_404(room_id)
     room_image = room.image
@@ -161,7 +161,6 @@ def room_schedule(room_id):
             invitees = [email.strip() for email in invitees.split(',')]
         else:
             invitees = []
-
 
         # Get start time from form data
         start_time_str = data.get('start_time')
@@ -209,8 +208,6 @@ def room_schedule(room_id):
 
         # Prepare email details for the invitees
         subject = f"Convite de reunião para {purpose} às {start_time.strftime('%H:%M')}"
-        #body = f"You have been invited to a meeting for the purpose of '{purpose}' in room '{room.name}' at {start_time.strftime('%H:%M')}.\n\nDetails:\nRoom: {room.name}\nStart Time: {start_time.strftime('%H:%M')}\nEnd Time: {end_time.strftime('%H:%M')}."
-
         send_email(user.email, subject, f"Sua reunião foi agendada com sucesso!! \n\nSala: {room.name}\nMotivo: {purpose}\nHorário: {start_time}")
 
         invitee_emails = []
@@ -227,31 +224,42 @@ def room_schedule(room_id):
         return jsonify({"message": "Meeting scheduled successfully, invitations sent", "meeting_id": new_meeting.id}), 201
 
     users = User.query.all()
-    meetings = Meeting.query.filter_by(room_id=room.id).all()
+    meetings = Meeting.query.filter_by(room_id=room_id).all()
 
+    # Generate the schedule with 30-minute increments
     schedule = []
     start_hour = 8
     end_hour = 18
 
+    # Loop through each hour and create 30-minute slots
     for hour in range(start_hour, end_hour):
-        time_slot = {
-            "time": f"{hour}:00",
-            "status": "Disponível",
-            "meeting": None
-        }
-        for meeting in meetings:
-            if time(hour, 0) <= meeting.start_time < time(hour + 1, 0):
-                time_slot["status"] = "Occupied"
-                time_slot["meeting"] = {
-                    "purpose": meeting.purpose,
-                    "booked_by": meeting.booked_by,
-                    "start_time": meeting.start_time.strftime("%H:%M"),
-                    "end_time": meeting.end_time.strftime("%H:%M"),
-                }
-                break
-        schedule.append(time_slot)
+        for minute in [0, 30]:  # Create time slots at 0 and 30 minutes
+            time_slot = {
+                "time": f"{hour:02d}:{minute:02d}",
+                "status": "disponível",  # Default status
+                "meeting": None
+            }
+
+            # Define start and end time for this time slot
+            slot_start_time = time(hour, minute)
+            slot_end_time = (datetime.combine(datetime.today(), slot_start_time) + timedelta(minutes=30)).time()
+
+            # Check if the current time slot is occupied by any meeting
+            for meeting in meetings:
+                if (slot_start_time < meeting.end_time) and (meeting.start_time < slot_end_time):
+                    time_slot["status"] = "Occupied"
+                    time_slot["meeting"] = {
+                        "purpose": meeting.purpose,
+                        "booked_by": meeting.booked_by,
+                        "start_time": meeting.start_time.strftime("%H:%M"),
+                        "end_time": meeting.end_time.strftime("%H:%M"),
+                    }
+                    break
+
+            schedule.append(time_slot)
 
     return render_template('room.html', room=room, schedule=schedule, users=users, room_image=room_image)
+
 
 def is_admin():
     return session.get('is_admin', False)

@@ -27,7 +27,9 @@
 
     <div class="schedule-container">
         {% for slot in schedule %}
-        <div class="schedule-slot {{ slot.status.lower() }}" onclick="openBookingModal('{{ slot.time }}', '{{ slot.status }}')">
+        <div class="schedule-slot {{ slot.status.lower() }}" 
+            onclick="openBookingModal('{{ slot.time }}', '{{ slot.status }}')" 
+            ontouchstart="openBookingModal('{{ slot.time }}', '{{ slot.status }}')">
             <span class="time">{{ slot.time }}</span>
             {% if slot.status.lower() == 'occupied' %}
             <div class="details">
@@ -40,6 +42,7 @@
         </div>
         {% endfor %}
     </div>
+    
 
     <div id="bookingModal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -70,6 +73,7 @@
 
     <script>
         function openBookingModal(time, status) {
+            console.log(`Opening modal for time: ${time}, status: ${status}`);
             if (status.toLowerCase() === 'disponível') {
                 document.getElementById('modalTime').textContent = time;
                 document.getElementById('bookingModal').style.display = 'block';
