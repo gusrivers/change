@@ -1,0 +1,124 @@
+body {
+    background: linear-gradient(to right, #1a1a1a, #003366);
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    padding-top: 120px; /* Adjust this value to ensure content doesn't hide behind the fixed header */
+}
+
+header {
+    position: absolute; /* Fixes the header at the top */
+    top: 0; /* Aligns the header to the top */
+    left: 0; /* Ensures the header starts from the left */
+    z-index: 1000; /* Ensures the header is above other content */
+    width: 100%; /* Full width of the viewport */
+    background-color: #002d72; /* Header background color */
+    border-bottom: 2px solid #004e92; /* Border color */
+    padding: 10px 20px; /* Padding for header */
+    box-sizing: border-box; /* Include padding in width */
+}
+
+
+.logo {
+    height: 80px; /* Adjust as necessary */
+    margin-right: 20px;
+    cursor: pointer;
+}
+
+h1 {
+    color: #66b2ff;
+    margin: 20px 0;
+    text-align: center;
+}
+
+main {
+    padding: 20px;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.section-container {
+    background-color: #001f3f;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0; /* Space for the fixed header */
+    border-radius: 8px;
+    overflow: hidden; /* To round corners */
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #003366;
+}
+
+td {
+    background-color: #001f3f;
+}
+
+tr:nth-child(even) td {
+    background-color: #003040; /* Alternating row color */
+}
+
+tr:hover {
+    background-color: #004e92; /* Hover effect for rows */
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+.edit-btn {
+    background-color: #007bff;
+}
+
+.edit-btn:hover {
+    background-color: #0056b3;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
+.add-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 20px auto;
+    display: block;
+}
+
+.add-btn:hover {
+    background-color: #0056b3;
+}
