@@ -172,7 +172,9 @@ def room_schedule(room_id):
         else:
             return jsonify({"error": "Start time is required"}), 400
 
-        end_time = (datetime.combine(datetime.today(), start_time) + timedelta(hours=1)).time()
+        # Set end time to 30 minutes after start time
+        end_time = (datetime.combine(datetime.today(), start_time) + timedelta(minutes=30)).time()
+
 
         # Fetch the user details (including email) from the database
         user = User.query.filter_by(username=username).first()
@@ -207,7 +209,7 @@ def room_schedule(room_id):
         db.session.commit()
 
         # Prepare email details for the invitees
-        subject = f"Convite de reunião para {purpose} às {start_time.strftime('%H:%M')}"
+        subject = f"Sua reunião para {purpose} às {start_time.strftime('%H:%M')}"
         send_email(user.email, subject, f"Sua reunião foi agendada com sucesso!! \n\nSala: {room.name}\nMotivo: {purpose}\nHorário: {start_time}")
 
         invitee_emails = []
@@ -255,7 +257,6 @@ def room_schedule(room_id):
                         "end_time": meeting.end_time.strftime("%H:%M"),
                     }
                     break
-
             schedule.append(time_slot)
 
     return render_template('room.html', room=room, schedule=schedule, users=users, room_image=room_image)

@@ -34,14 +34,14 @@
             {% if slot.status.lower() == 'occupied' %}
             <div class="details">
                 <p>Agendado por: {{ slot.meeting.booked_by }}</p>
-                <p>Motivo: {{ slot.meeting.purpose }}</p>
-            </div>
-            {% else %}
-            <span>{{ slot.status }}</span>
-            {% endif %}
+                <p>Motivo: {{ slot.meeting .purpose }}</p>
         </div>
-        {% endfor %}
+        {% else %}
+        <span>{{ slot.status }}</span>
+        {% endif %}
     </div>
+    {% endfor %}
+</div>
     
 
     <div id="bookingModal" class="modal" style="display: none;">
