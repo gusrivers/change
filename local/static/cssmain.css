@@ -1,0 +1,180 @@
+/* Global Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #ffffff;
+    background: linear-gradient(to right, #1a1a1a, #003366);
+    min-height: 100vh; /* Ensure the body takes up at least the full viewport height */
+    display: flex;
+    flex-direction: column; /* Ensure header and main content stack vertically */
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #002d72;
+    border-bottom: 2px solid #004e92;
+    width: 100%;
+    box-sizing: border-box; /* Ensure padding is included in the total width */
+}
+
+.logo {
+    height: 80px;
+    margin-right: 20px;
+}
+
+.header-icon {
+    height: 50px;
+    cursor: pointer;
+}
+
+/* Page Title Styles */
+h1 {
+    text-align: center;
+    margin: 20px 0;
+    color: #ffffff;
+}
+
+/* Main Content Area */
+main {
+    flex: 1; /* Allow main content to grow and fill available space */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the content horizontally */
+}
+
+/* Room Cards Container */
+#rooms-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box; /* Ensure padding is included in the total width */
+}
+
+/* Room Card Styles */
+.room-card {
+    background-color: #333333;
+    border: 1px solid #444444;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px;
+    width: 250px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.room-card:hover {
+    background-color: #444444;
+    transform: scale(1.05);
+}
+
+.room-card h2 {
+    margin: 0 0 10px;
+    color: #ffffff;
+}
+
+.room-card p {
+    margin: 5px 0;
+    color: #cccccc;
+}
+.sidebar {
+    height: 100%;
+    width: 60px; /* Initially thin bar */
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #343a40;
+    overflow-x: hidden;
+    transition: width 0.5s; /* Smooth transition */
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align items to the left */
+    padding-left: 10px; /* Add space between icons and sidebar border */
+}
+
+/* Sidebar expands when hovered */
+.sidebar:hover {
+    width: 250px; /* Expand to full width on hover */
+}
+
+/* Sidebar items (icons + names) */
+.sidebar a {
+    padding: 15px;
+    text-decoration: none;
+    font-size: 18px;
+    color: #818181;
+    display: flex;
+    align-items: center; /* Center icons and text vertically */
+    width: 100%;
+    transition: 0.3s;
+    white-space: nowrap; /* Prevent text wrapping */
+    margin-bottom: 10px; /* Add space between each icon */
+}
+
+/* Sidebar icons (logos) */
+.sidebar a img {
+    width: 30px; /* Logo size */
+    height: 30px;
+    margin-right: 10px; /* Space between logo and text */
+}
+
+/* Hide text initially */
+.sidebar a span {
+    display: none; /* Hidden when not hovered */
+}
+
+/* Show the name on hover */
+.sidebar:hover a span {
+    display: inline-block; /* Show text on hover */
+}
+
+.main-content {
+    margin-left: 60px; /* Default space for collapsed sidebar */
+    transition: margin-left 0.5s ease; /* Smooth transition */
+    padding: 20px;
+}
+
+.sidebar:hover ~ .main-content {
+    margin-left: 250px; /* Push main content when sidebar expands */
+}
+
+
+/* Centered logo inside sidebar */
+/* Add this to your existing CSS file */
+.logo-container {
+    text-align: center; /* Center the logo */
+    margin: 10px 0; /* Add some margin for spacing */
+}
+
+.logo {
+    max-width: 100%; /* Ensure the logo doesn't exceed the container's width */
+    height: auto; /* Maintain aspect ratio */
+    width: auto; /* Maintain aspect ratio on small screens */
+}
+
+/* Optional: Make adjustments for smaller screens */
+@media (max-width: 768px) {
+    .logo {
+        width: 80%; /* Adjust the size for smaller devices */
+        max-width: 200px; /* Set a max width to prevent it from becoming too large */
+    }
+}
+
+
+.logo-container img {
+    width: 40px; /* Small logo for collapsed state */
+    height: auto;
+    transition: width 0.5s ease;
+}
+
+.sidebar:hover .logo-container img {
+    width: 150px; /* Larger logo when sidebar is expanded */
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar User</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='cssadd.css') }}">
+</head>
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo" onclick="window.location.href='/'">
+    </header>
+    <div class="form-container">
+        <h1>Criar Usuário</h1>
+        <form action="{{ url_for('create_user') }}" method="POST">
+            <label for="username">Usuário:</label>
+            <input type="text" id="username" name="username" required>
+            <br>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email">
+            <br>
+            <label for="password">Senha:</label>
+            <input type="password" id="password" name="password">
+            <br>
+            <label for="is_admin">
+                Admin
+                <input type="checkbox" id="is_admin" name="is_admin">
+            </label>
+            <br>
+            <button type="submit">Criar Usuário</button>
+        </form>
+        <a href="{{ url_for('admin_users') }}">Voltar para lista de usuários</a>
+    </div>
+</body>
+</html>

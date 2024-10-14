@@ -1,0 +1,145 @@
+/* General Blue Themed Styling for Edit User and Edit Room Pages */
+body {
+    flex: 1;
+    background: linear-gradient(to right, #1a1a1a, #003366);
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+}
+
+header {
+    width: 100%;
+    background-color: #002d72;
+    border-bottom: 2px solid #004e92;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    box-sizing: border-box;
+}
+
+.logo {
+    height: 80px;
+    margin-right: 20px;
+    cursor: pointer;
+}
+
+.container {
+    background-color: #001f3f;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 90%; /* Use percentage for responsiveness */
+    max-width: 500px; /* Max width for larger screens */
+    text-align: center;
+    margin-top: 50px; /* Adjust for better appearance */
+}
+
+h1 {
+    color: #66b2ff;
+    margin-bottom: 20px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+label {
+    width: 100%;
+    text-align: left;
+    margin-top: 10px;
+    font-size: 16px;
+}
+
+input[type="text"], 
+input[type="password"],
+input[type="number"],
+textarea {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: none;
+    background-color: #333;
+    color: white;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    font-size: 16px;
+    margin-top: 20px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+a {
+    color: #66b2ff;
+    text-decoration: none;
+    margin-top: 20px;
+    text-align: center;
+    display: block;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 768px) {
+    header {
+        padding: 10px;
+    }
+
+    .logo {
+        height: 60px; /* Reduce logo size for mobile */
+    }
+
+    .container {
+        margin-top: 20px; /* Less margin on mobile */
+    }
+
+    h1 {
+        font-size: 1.5em; /* Reduce heading size for mobile */
+    }
+
+    button {
+        font-size: 14px; /* Smaller button text */
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.3em; /* Even smaller heading size for very small screens */
+    }
+
+    input[type="text"], 
+    input[type="password"], 
+    textarea {
+        padding: 8px; /* Adjust padding for smaller screens */
+        font-size: 14px; /* Smaller font size */
+    }
+
+    button {
+        padding: 8px; /* Smaller padding for buttons */
+    }
+
+    a {
+        font-size: 14px; /* Adjust link size */
+    }
+}

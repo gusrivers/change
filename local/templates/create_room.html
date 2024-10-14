@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Sala</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='cssadd.css') }}">
+</head>
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo" onclick="window.location.href='/'">
+    </header>
+    <div class="form-container">
+        <h1>Criar Sala</h1>
+        <form action="{{ url_for('admin_create_room') }}" method="POST">
+            <label for="name">Nome da sala:</label>
+            <input type="text" id="name" name="name" required>
+            <br>
+            <label for="description">Descrição:</label>
+            <textarea id="description" name="description"></textarea>
+            <br>
+            <label for="capacity">Capacidade:</label>
+            <input type="number" id="capacity" name="capacity" required>
+            <br>
+            <button type="submit">Criar sala</button>
+        </form>        
+        <a href="{{ url_for('admin_users') }}">Voltar para lista de salas</a>
+    </div>
+
+    <script>
+        document.getElementById('create-room-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            const capacity = document.getElementById('capacity').value;
+
+            fetch("{{ url_for('create_room') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    description: description,
+                    capacity: capacity
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  // handle success
+                  console.log(data);
+              }).catch((error) => {
+                  // handle error
+                  console.error(error);
+              });
+        });
+    </script>
+</body>
+</html>

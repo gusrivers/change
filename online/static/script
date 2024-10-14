@@ -1,0 +1,48 @@
+$(document).ready(function() {
+    const roomId = 1; // Replace with dynamic room ID if necessary
+
+    // Function to fetch and display the room schedule
+    function loadSchedule() {
+        $.getJSON(`/room/${roomId}/schedule`, function(data) {
+            let scheduleHtml = `<h2>Schedule for ${data.room}</h2><ul>`;
+            data.schedule.forEach(slot => {
+                scheduleHtml += `<li>${slot.time}: ${slot.status}`;
+                if (slot.status === 'Occupied') {
+                    scheduleHtml += ` - ${slot.meeting.purpose} by ${slot.meeting.booked_by}`;
+                }
+                scheduleHtml += `</li>`;
+            });
+            scheduleHtml += `</ul>`;
+            $('#schedule-container').html(scheduleHtml);
+        });
+    }
+
+    // Load schedule on page load
+    loadSchedule();
+
+    // Handle form submission for booking a meeting
+    $('#bookingForm').submit(function(event) {
+        event.preventDefault();
+        const bookingData = {
+            start_time: $('#start_time').val(),
+            end_time: $('#end_time').val(),
+            purpose: $('#purpose').val(),
+            booked_by: $('#booked_by').val()
+        };
+
+        $.ajax({
+            url: `/room/${roomId}/schedule`,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(bookingData),
+            success: function(response) {
+                $('#booking-response').text(response.message);
+                loadSchedule(); // Reload the schedule after booking
+            },
+            error: function(xhr) {
+                const errorMessage = xhr.responseJSON ? xhr.responseJSON.error : 'An error occurred';
+                $('#booking-response').text(`Error: ${errorMessage}`);
+            }
+        });
+    });
+});

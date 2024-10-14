@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Usuário</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='cssedituser.css') }}">
+</head>
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Company Logo" class="logo" onclick="window.location.href='/'">
+    </header>
+    <div class="container">
+        <h1>Editar Usuário</h1>
+        <form action="{{ url_for('admin_edit_user', user_id=user.id) }}" method="POST">
+            <label for="username">Usuário:</label>
+            <input type="text" id="username" name="username" value="{{ user.username }}" required>
+            <br>
+            <label for="password">Senha (Deixar em branco se não deseja alterar):</label>
+            <input type="password" id="password" name="password">
+            <br>
+            <label for="is_admin">
+                Admin
+                <input type="checkbox" id="is_admin" name="is_admin" {% if user.is_admin %}checked{% endif %}>
+            </label>
+            <br>
+            <button type="submit">Salvar Mudanças</button>
+        </form>
+        <a href="{{ url_for('admin_users') }}">Voltar para lista de usuários</a>
+    </div>
+</body>
+</html>
