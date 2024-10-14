@@ -8,7 +8,7 @@ from flask_cors import CORS
 from flask_talisman import Talisman
 from flask_mail import Mail, Message
 #import smtplib
-
+import pymysql
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'static/images/'
@@ -17,7 +17,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/sala'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@127.0.0.1/sala'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -40,7 +40,6 @@ class User(db.Model):
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    image = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     capacity = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), default='Disponível')
@@ -55,7 +54,6 @@ class Meeting(db.Model):
     purpose = db.Column(db.String(255))
     booked_by = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-
     room = db.relationship('Room', backref=db.backref('meetings', lazy=True))
 
 @app.route('/static/service-worker.js')
@@ -149,7 +147,6 @@ def upload_room_image(room_id):
 @app.route('/room/<int:room_id>/schedule', methods=['GET', 'POST'])
 def room_schedule(room_id):
     room = Room.query.get_or_404(room_id)
-    room_image = room.image
 
     if request.method == 'POST':
         data = request.form
@@ -259,7 +256,7 @@ def room_schedule(room_id):
                     break
             schedule.append(time_slot)
 
-    return render_template('room.html', room=room, schedule=schedule, users=users, room_image=room_image)
+    return render_template('room.html', room=room, schedule=schedule, users=users)
 
 
 def is_admin():
@@ -400,8 +397,11 @@ def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('admin_login'))
 
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    app.run(ssl_context=('server.crt', 'server.key'), host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0')
 
 
 

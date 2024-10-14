@@ -4,7 +4,8 @@ body {
     margin: 0;
     padding: 0;
     color: #ffffff;
-    background: linear-gradient(to right, #1a1a1a, #003366);
+    background: url('/static/fundo.png') no-repeat center center;
+    background-size: cover;
     min-height: 100vh; /* Ensure the body takes up at least the full viewport height */
     display: flex;
     flex-direction: column; /* Ensure header and main content stack vertically */
@@ -12,10 +13,12 @@ body {
 
 header {
     display: flex;
+    background: url('/static/header1.png') no-repeat center center;
+    /*background-size: cover;*/
     justify-content: space-between;
     align-items: center;
     padding: 10px 20px;
-    background-color: #002d72;
+    background-color: #d3d3d3;
     border-bottom: 2px solid #004e92;
     width: 100%;
     box-sizing: border-box; /* Ensure padding is included in the total width */
