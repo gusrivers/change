@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Agendamento de salas</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='cssroom.css') }}">
 </head>
 <body>
@@ -11,52 +12,53 @@
     </header>
 
     <h1>{{ room.name }}</h1>
-
     <div class="schedule-container">
         {% for slot in schedule %}
         <div class="schedule-slot {{ slot.status.lower() }}" 
-            {% if slot.status.lower() == 'occupied' %}
-            onclick="openOccupiedModal('{{ slot.time }}', '{{ slot.meeting.booked_by }}', '{{ slot.meeting.purpose }}', '{{ slot.meeting.id }}')"
-            {% else %}
-            onclick="openBookingModal('{{ slot.time }}', '{{ slot.status }}')"
-            {% endif %}>
+            onclick="openBookingModal('{{ slot.time }}', '{{ slot.status }}')" 
+            ontouchstart="openBookingModal('{{ slot.time }}', '{{ slot.status }}')">
             <span class="time">{{ slot.time }}</span>
             {% if slot.status.lower() == 'occupied' %}
             <div class="details">
                 <p>Agendado por: {{ slot.meeting.booked_by }}</p>
-                <p>Motivo: {{ slot.meeting.purpose }}</p>
-            </div>
-            {% else %}
-            <span>{{ slot.status }}</span>
-            {% endif %}
+                <p>Motivo: {{ slot.meeting .purpose }}</p>
         </div>
-        {% endfor %}
+        {% else %}
+        <span>{{ slot.status }}</span>
+        {% endif %}
     </div>
-
-    <!-- Modal for occupied slot check-in -->
-    <div id="occupiedModal" class="modal" style="display: none;">
+    {% endfor %}
+</div>
+    <div id="bookingModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <span class="close" onclick="closeOccupiedModal()">&times;</span>
-            <h2>Detalhes da Reunião</h2>
-            <p><strong>Horário:</strong> <span id="occupiedTime"></span></p>
-            <p><strong>Agendado por:</strong> <span id="occupiedBy"></span></p>
-            <p><strong>Motivo:</strong> <span id="occupiedPurpose"></span></p>
-            <input type="hidden" id="meetingId" name="meetingId">
-
-            <!--<h3>Check-in para Editar/Deletar</h3>
-            <label for="checkinUser">Digite seu nome:</label>
-            <input type="text" id="checkinUser" name="checkinUser">
-
-            <label for="checkinPass">Digite sua senha:</label>
-            <input type="password" id="checkinPass" name="checkinPass">
-
-            <button type="button" onclick="verifyCheckin()">Confirmar Check-in</button>-->
+            <span class="close" onclick="closeBookingModal()">&times;</span>
+            <h2>Agendar horário às <span id="modalTime"></span></h2>
+            <form id="bookingForm">
+                <label for="username">Usuário:</label>
+                <input type="text" id="username" name="username" required>
+            
+                <label for="password">Senha:</label>
+                <input type="password" id="password" name="password" required>
+            
+                <label for="purpose">Motivo:</label>
+                <input type="text" id="purpose" name="purpose" required>
+            
+                <label for="invitees">Convidar usuários:</label>
+                <select id="invitees" name="invitees" multiple class="custom-select">
+                    {% for user in users %}
+                    <option value="{{ user.email }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="start_time" name="start_time">
+            
+                <button type="button" onclick="confirmBooking()">Confirmar agendamento</button>
+            </form>
         </div>
     </div>
 
     <script>
-        // Open booking modal for available slots
         function openBookingModal(time, status) {
+            console.log(`Opening modal for time: ${time}, status: ${status}`);
             if (status.toLowerCase() === 'disponível') {
                 document.getElementById('modalTime').textContent = time;
                 document.getElementById('bookingModal').style.display = 'block';
@@ -69,7 +71,38 @@
             document.getElementById('bookingModal').style.display = 'none';
         }
 
-        // Open occupied modal for occupied slots
+        function confirmBooking() {
+            const time = document.getElementById('modalTime').textContent;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const purpose = document.getElementById('purpose').value;
+            const invitees = Array.from(document.getElementById('invitees').selectedOptions).map(option => option.value);
+
+            fetch(`/room/{{ room.id }}/schedule`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    username: username,
+                    password: password,
+                    purpose: purpose,
+                    invitees: invitees.join(','),
+                    start_time: time,
+                    end_time: time,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert('Horário agendado com sucesso!');
+                    closeBookingModal();
+                    location.reload();
+                }
+            });
+        }
         function openOccupiedModal(time, bookedBy, purpose, meetingId) {
             document.getElementById('occupiedTime').textContent = time;
             document.getElementById('occupiedBy').textContent = bookedBy;
@@ -77,83 +110,8 @@
             document.getElementById('meetingId').value = meetingId;
             document.getElementById('occupiedModal').style.display = 'block';
         }
-
         function closeOccupiedModal() {
             document.getElementById('occupiedModal').style.display = 'none';
-        }
-
-        // Verify check-in credentials (username and password)
-        function verifyCheckin() {
-            const checkinUser = document.getElementById('checkinUser').value;
-            const checkinPass = document.getElementById('checkinPass').value;
-            const meetingId = document.getElementById('meetingId').value;
-
-            // Send the username and password for verification
-            fetch(`/room/{{ room.id }}/checkin/${meetingId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    username: checkinUser,
-                    password: checkinPass
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // If check-in is successful, open the edit/delete modal
-                    openEditDeleteModal(meetingId);
-                } else {
-                    alert('Check-in falhou. Usuário ou senha incorretos.');
-                }
-            });
-        }
-
-        // Open modal for editing or deleting a meeting
-        function openEditDeleteModal(meetingId) {
-            const modalContent = `
-                <div class="modal-content">
-                    <span class="close" onclick="closeEditDeleteModal()">&times;</span>
-                    <h2>Editar ou Deletar Reunião</h2>
-                    <button onclick="editMeeting(${meetingId})">Editar</button>
-                    <button onclick="deleteMeeting(${meetingId})">Deletar</button>
-                </div>
-            `;
-            const editDeleteModal = document.createElement('div');
-            editDeleteModal.id = 'editDeleteModal';
-            editDeleteModal.classList.add('modal');
-            editDeleteModal.innerHTML = modalContent;
-            document.body.appendChild(editDeleteModal);
-            editDeleteModal.style.display = 'block';
-        }
-
-        function closeEditDeleteModal() {
-            const editDeleteModal = document.getElementById('editDeleteModal');
-            if (editDeleteModal) {
-                editDeleteModal.style.display = 'none';
-                document.body.removeChild(editDeleteModal);
-            }
-        }
-
-        function editMeeting(meetingId) {
-            // Handle meeting edit logic here
-            alert(`Editing meeting with ID: ${meetingId}`);
-        }
-
-        function deleteMeeting(meetingId) {
-            if (confirm('Tem certeza de que deseja deletar esta reunião?')) {
-                fetch(`/room/{{ room.id }}/meeting/${meetingId}`, {
-                    method: 'DELETE'
-                }).then(response => {
-                    if (response.ok) {
-                        alert('Reunião deletada com sucesso!');
-                        location.reload();  // Reload the page after deletion
-                    } else {
-                        alert('Erro ao deletar a reunião.');
-                    }
-                });
-            }
         }
     </script>
 </body>
