@@ -94,8 +94,8 @@ def create_room():
 def send_invitation_email(email, user, room, start_time, end_time, purpose):
     print(f"Sending email for room: {room.name} by {user.username}")  # Debugging
     subject = f"Convite de reunião para {purpose} às {start_time.strftime('%H:%M')}"
-    body = (f"Você foi convidado(a) por {user.username} para a reunião com motivo de: {purpose} "
-            f"na sala {room.name} às {start_time.strftime('%H:%M')}.\n\n"
+    body = (f"Você foi convidado(a) por {user.username} para a reunião com motivo de '{purpose}' "
+            f"em {room.name} às {start_time.strftime('%H:%M')}.\n\n"
             f"Sala: {room.name}\nHorário: {start_time.strftime('%H:%M')}\n")
     
     send_email(email, subject, body)
@@ -391,6 +391,64 @@ def admin_delete_room(room_id):
     db.session.delete(room)
     db.session.commit()
     return redirect(url_for('admin_users'))
+
+@app.route('/room/<int:room_id>/edit-meeting', methods=['POST'])
+def edit_meeting(room_id):
+    data = request.form
+    start_time_str = data.get('start_time')
+    purpose = data.get('purpose')
+    invitees = data.get('invitees', '').split(',')
+
+    # Find the meeting at that time
+    start_time = datetime.strptime(start_time_str, '%H:%M').time()
+    meeting = Meeting.query.filter_by(room_id=room_id, start_time=start_time).first()
+
+    if meeting:
+        meeting.purpose = purpose
+        # Handle updating invitees logic here...
+        db.session.commit()
+        return jsonify({"message": "Meeting updated successfully"}), 200
+    return jsonify({"error": "Meeting not found"}), 404
+
+@app.route('/room/<int:room_id>/checkin/<int:meeting_id>', methods=['POST'])
+def checkin_meeting(room_id, meeting_id):
+    # Get the meeting details
+    meeting = Meeting.query.get_or_404(meeting_id)
+    
+    # Get the submitted username and password from the form
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    # Check if the username and password match
+    if meeting.booked_by == username and meeting.password == password:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"success": False, "error": "Invalid username or password"}), 401
+
+
+@app.route('/room/<int:room_id>/check-in', methods=['POST'])
+def check_in(room_id):
+    data = request.form
+    username = data.get('username')
+    password = data.get('password')
+    start_time_str = data.get('start_time')
+
+    user = User.query.filter_by(username=username).first()
+
+    if not user or user.password != password:
+        return jsonify({"error": "Usuário ou senha incorretos!"}), 401
+
+    start_time = datetime.strptime(start_time_str, '%H:%M').time()
+
+    # Find the meeting at the specified time
+    meeting = Meeting.query.filter_by(room_id=room_id, start_time=start_time).first()
+
+    if meeting:
+        # Mark the user as checked-in (you can store this in a field or log it)
+        # Example: meeting.checked_in_by = user.username
+        db.session.commit()
+        return jsonify({"message": "Check-in realizado com sucesso!"}), 200
+    return jsonify({"error": "Reunião não encontrada!"}), 404
 
 @app.route('/admin/logout')
 def admin_logout():
