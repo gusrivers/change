@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Cliente</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='mainstyle.css') }}">
+</head>
+<body>
+    <h1>Chat - Cliente</h1>
+    <div id="chat"></div>
+    <input type="text" id="message" placeholder="Digite sua mensagem...">
+    <button onclick="enviarMensagem()">Enviar</button>
+
+    <script>
+        const socket = io();
+        const clienteId = {{ cliente_id|tojson }}; // A variável cliente_id será injetada corretamente com o filtro tojson
+        console.log(clienteId); // Verifique o valor da variável no console
+    
+        // Carregar histórico ao iniciar
+        fetch(`/historico/${clienteId}`)
+            .then(response => response.json())
+            .then(data => {
+                const chat = document.getElementById('chat');
+                data.forEach(msg => {
+                    chat.innerHTML += `<p><strong>${msg.enviado_por}:</strong> ${msg.mensagem}</p>`;
+                });
+            });
+    
+        // Receber mensagens
+        socket.on('mensagem', function(data) {
+            const chat = document.getElementById('chat');
+            chat.innerHTML += `<p><strong>${data.usuario}:</strong> ${data.mensagem}</p>`;
+        });
+    
+        // Enviar mensagem
+        function enviarMensagem() {
+            const mensagem = document.getElementById('message').value;
+            socket.emit('mensagem', { usuario: 'Cliente', mensagem: mensagem, cliente_id: clienteId });
+            document.getElementById('message').value = '';  // Limpar campo
+        }
+    </script>    
+</body>
+</html>

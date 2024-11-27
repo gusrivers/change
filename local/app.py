@@ -35,7 +35,7 @@ class User(db.Model):
     password = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.strptime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -455,8 +455,8 @@ def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('admin_login'))
 
-with app.app_context():
-    db.create_all()
+#with app.app_context():
+#    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

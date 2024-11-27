@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Atendente</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='mainstyle.css') }}">
+</head>
+<body>
+    <h1>Chat - Atendente</h1>
+    <div id="chat"></div>
+    <input type="text" id="message" placeholder="Digite sua mensagem...">
+    <button onclick="enviarMensagem()">Enviar</button>
+
+    <script>
+        const socket = io();
+        const clienteId = 1;  // Defina o ID do cliente ou obtenha dinamicamente
+    
+        // Carregar histórico ao iniciar
+        fetch(`/historico/${clienteId}`)
+            .then(response => response.json())
+            .then(data => {
+                const chat = document.getElementById('chat');
+                data.forEach(msg => {
+                    chat.innerHTML += `<p><strong>${msg.enviado_por}:</strong> ${msg.mensagem}</p>`;
+                });
+            });
+    
+        // Receber mensagens
+        socket.on('mensagem', function(data) {
+            const chat = document.getElementById('chat');
+            chat.innerHTML += `<p><strong>${data.usuario}:</strong> ${data.mensagem}</p>`;
+        });
+    
+        // Enviar mensagem
+        function enviarMensagem() {
+            const mensagem = document.getElementById('message').value;
+            socket.emit('mensagem', { usuario: 'Atendente', mensagem: mensagem, cliente_id: clienteId });
+            document.getElementById('message').value = '';  // Limpar campo
+        }
+    </script>
+</body>
+</html>
