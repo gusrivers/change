@@ -98,14 +98,13 @@
         <div class="inbox" id="inbox">
             <h3>Central de Atendimento</h3>
             {% for cliente in clientes %}
-                <div class="chat-list-item" onclick="openChat({{ cliente.id }}, '{{ cliente.nome }}')">
+                <div class="chat-list-item" data-id="{{ cliente.id }}" data-nome="{{ cliente.nome }}" onclick="openChat(this)">
                     <span class="client-name">{{ cliente.nome }}</span>
                     <span class="message-time">{{ cliente.ultima_mensagem_tempo }}</span>
                     <span class="message-text">{{ cliente.ultima_mensagem }}</span>
                 </div>
             {% endfor %}
-        </div>
-
+        </div>        
         <!-- Detalhes da conversa com o cliente -->
         <div class="chat-detail" id="chat-detail">
             <div class="chat-header" id="chat-header"></div>
@@ -121,7 +120,11 @@
 
     <script>
         // Função para abrir o chat detalhado
-        function openChat(clienteId, clienteNome) {
+        function openChat(element) {
+            // Obtém os dados do cliente clicado
+            var clienteId = element.getAttribute("data-id");
+            var clienteNome = element.getAttribute("data-nome");
+
             // Esconde a lista de chats e exibe o chat detalhado
             document.getElementById('inbox').style.display = 'none';
             document.getElementById('chat-detail').style.display = 'block';
@@ -131,21 +134,14 @@
             loadMessages(clienteId);
         }
 
-        // Função para carregar as mensagens do cliente
+        // Função para carregar as mensagens do cliente (exemplo)
         function loadMessages(clienteId) {
-            fetch(`/mensagens/${clienteId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const messagesContainer = document.getElementById('messages');
-                    messagesContainer.innerHTML = '';  // Limpa as mensagens anteriores
-                    data.mensagens.forEach(msg => {
-                        const messageElement = document.createElement('div');
-                        messageElement.innerText = msg.texto;
-                        messageElement.classList.add(msg.tipo === 'usuario' ? 'usuario' : 'cliente');
-                        messagesContainer.appendChild(messageElement);
-                    });
-                })
-                .catch(error => console.error('Erro ao carregar mensagens:', error));
+            // Aqui você pode fazer uma requisição para o backend ou carregar mensagens já carregadas
+            console.log('Carregando mensagens do cliente:', clienteId);
+
+            // Simulação de mensagens
+            var mensagensContainer = document.getElementById('chat-messages');
+            mensagensContainer.innerHTML = "<p>Mensagem 1 do Cliente " + clienteId + "</p><p>Mensagem 2 do Cliente " + clienteId + "</p>";
         }
 
         // Função para enviar a mensagem
