@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central de Atendimento</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .inbox {
+            width: 30%;
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            height: 500px;
+            overflow-y: auto;
+        }
+        .chat-list-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .chat-list-item:hover {
+            background-color: #f0f0f0;
+        }
+        .client-name {
+            font-weight: bold;
+        }
+        .message-time {
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .message-text {
+            font-size: 0.9rem;
+            color: #555;
+        }
+        .chat-detail {
+            width: 65%;
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .chat-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .messages {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        .input-message {
+            display: flex;
+            gap: 10px;
+        }
+        .input-message input {
+            width: 80%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .input-message button {
+            padding: 10px 15px;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .input-message button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Inbox com lista de Conversas -->
+        <div class="inbox" id="inbox">
+            <h3>Central de Atendimento</h3>
+            {% for cliente in clientes %}
+                <div class="chat-list-item" onclick="openChat({{ cliente.id }}, '{{ cliente.nome }}')">
+                    <span class="client-name">{{ cliente.nome }}</span>
+                    <span class="message-time">{{ cliente.ultima_mensagem_tempo }}</span>
+                    <span class="message-text">{{ cliente.ultima_mensagem }}</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Detalhes da conversa com o cliente -->
+        <div class="chat-detail" id="chat-detail">
+            <div class="chat-header" id="chat-header"></div>
+            <div class="messages" id="messages">
+                <!-- Mensagens vão ser exibidas aqui -->
+            </div>
+            <div class="input-message">
+                <input type="text" id="input-message" placeholder="Digite sua mensagem...">
+                <button onclick="sendMessage()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Função para abrir o chat detalhado
+        function openChat(clienteId, clienteNome) {
+            // Esconde a lista de chats e exibe o chat detalhado
+            document.getElementById('inbox').style.display = 'none';
+            document.getElementById('chat-detail').style.display = 'block';
+            document.getElementById('chat-header').innerText = 'Conversando com ' + clienteNome;
+
+            // Busca as mensagens do cliente
+            loadMessages(clienteId);
+        }
+
+        // Função para carregar as mensagens do cliente
+        function loadMessages(clienteId) {
+            fetch(`/mensagens/${clienteId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const messagesContainer = document.getElementById('messages');
+                    messagesContainer.innerHTML = '';  // Limpa as mensagens anteriores
+                    data.mensagens.forEach(msg => {
+                        const messageElement = document.createElement('div');
+                        messageElement.innerText = msg.texto;
+                        messageElement.classList.add(msg.tipo === 'usuario' ? 'usuario' : 'cliente');
+                        messagesContainer.appendChild(messageElement);
+                    });
+                })
+                .catch(error => console.error('Erro ao carregar mensagens:', error));
+        }
+
+        // Função para enviar a mensagem
+        function sendMessage() {
+            const messageInput = document.getElementById('input-message');
+            const message = messageInput.value.trim();
+            if (message === '') return;
+
+            const clienteId = document.getElementById('chat-header').innerText.split(' ')[2];  // Extrai o ID do cliente
+
+            fetch('/enviar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ cliente_id: clienteId, texto: message })
+            })
+            .then(response => {
+                if (response.ok) {
+                    messageInput.value = '';  // Limpa o campo de input
+                    loadMessages(clienteId);  // Atualiza as mensagens
+                } else {
+                    alert('Erro ao enviar mensagem');
+                }
+            })
+            .catch(error => console.error('Erro ao enviar mensagem:', error));
+        }
+    </script>
+</body>
+</html>
