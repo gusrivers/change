@@ -3,43 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat - Cliente</title>
+    <title>Chat do Cliente</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='mainstyle.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .mensagens {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .formulario {
+            display: flex;
+            padding: 10px;
+            background: #f0f0f0;
+        }
+        .mensagem-input {
+            flex: 1;
+            padding: 5px;
+        }
+        .enviar-btn {
+            padding: 5px 10px;
+            background: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <h1>Chat - Cliente</h1>
-    <div id="chat"></div>
-    <input type="text" id="message" placeholder="Digite sua mensagem...">
-    <button onclick="enviarMensagem()">Enviar</button>
+    <div class="chat-container">
+        <div class="mensagens" id="mensagens"></div>
+        <form id="formulario" class="formulario">
+            <input type="text" id="mensagemInput" class="mensagem-input" placeholder="Digite sua mensagem...">
+            <button type="submit" class="enviar-btn">Enviar</button>
+        </form>
+    </div>
 
     <script>
-        const socket = io();
-        const clienteId = {{ cliente_id|tojson }}; // A variável cliente_id será injetada corretamente com o filtro tojson
-        console.log(clienteId); // Verifique o valor da variável no console
-    
-        // Carregar histórico ao iniciar
-        fetch(`/historico/${clienteId}`)
-            .then(response => response.json())
-            .then(data => {
-                const chat = document.getElementById('chat');
-                data.forEach(msg => {
-                    chat.innerHTML += `<p><strong>${msg.enviado_por}:</strong> ${msg.mensagem}</p>`;
-                });
-            });
-    
-        // Receber mensagens
-        socket.on('mensagem', function(data) {
-            const chat = document.getElementById('chat');
-            chat.innerHTML += `<p><strong>${data.usuario}:</strong> ${data.mensagem}</p>`;
+        const socket = io('http://localhost:5000');  // Conexão com o backend
+        const mensagensDiv = document.getElementById('mensagens');
+        const formulario = document.getElementById('formulario');
+        const mensagemInput = document.getElementById('mensagemInput');
+        const clienteId = parseInt(document.body.getAttribute('data-cliente-id'));
+        console.log(clienteId); // Certifique-se de que está funcionando
+
+        // Receber mensagens do servidor
+        socket.on('mensagem', (data) => {
+            const mensagem = document.createElement('div');
+            mensagem.innerText = `${data.usuario}: ${data.mensagem}`;
+            mensagensDiv.appendChild(mensagem);
+            mensagensDiv.scrollTop = mensagensDiv.scrollHeight;  // Scroll automático
         });
-    
-        // Enviar mensagem
-        function enviarMensagem() {
-            const mensagem = document.getElementById('message').value;
-            socket.emit('mensagem', { usuario: 'Cliente', mensagem: mensagem, cliente_id: clienteId });
-            document.getElementById('message').value = '';  // Limpar campo
-        }
-    </script>    
+
+        // Enviar mensagens
+        formulario.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const mensagem = mensagemInput.value;
+            if (mensagem.trim() !== '') {
+                socket.emit('mensagem', {
+                    cliente_id: clienteId,
+                    usuario: 'cliente',
+                    mensagem: mensagem
+                });
+                mensagemInput.value = '';
+            }
+        });
+    </script>
 </body>
 </html>

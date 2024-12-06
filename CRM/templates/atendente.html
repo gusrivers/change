@@ -3,42 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat - Atendente</title>
+    <title>Chat Atendente</title>
+    <link rel="stylesheet" href="/static/mainstyle.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='mainstyle.css') }}">
 </head>
 <body>
-    <h1>Chat - Atendente</h1>
-    <div id="chat"></div>
-    <input type="text" id="message" placeholder="Digite sua mensagem...">
-    <button onclick="enviarMensagem()">Enviar</button>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Clientes</h3>
+            <ul id="clientes-lista"></ul>
+        </div>
+        <div class="chat">
+            <div id="mensagens"></div>
+            <form id="formulario-chat">
+                <input type="text" id="mensagem-input" placeholder="Digite sua mensagem">
+                <button type="submit">Enviar</button>
+            </form>
+        </div>
+    </div>
 
     <script>
-        const socket = io();
-        const clienteId = 1;  // Defina o ID do cliente ou obtenha dinamicamente
-    
-        // Carregar histórico ao iniciar
-        fetch(`/historico/${clienteId}`)
-            .then(response => response.json())
-            .then(data => {
-                const chat = document.getElementById('chat');
-                data.forEach(msg => {
-                    chat.innerHTML += `<p><strong>${msg.enviado_por}:</strong> ${msg.mensagem}</p>`;
-                });
-            });
-    
-        // Receber mensagens
-        socket.on('mensagem', function(data) {
-            const chat = document.getElementById('chat');
-            chat.innerHTML += `<p><strong>${data.usuario}:</strong> ${data.mensagem}</p>`;
+        const socket = io.connect();
+        const mensagensDiv = document.getElementById('mensagens');
+        const formulario = document.getElementById('formulario-chat');
+        const mensagemInput = document.getElementById('mensagem-input');
+        const clientesLista = document.getElementById('clientes-lista');
+        let clienteSelecionado = null;
+
+        socket.on('mensagem', (data) => {
+            if (data.cliente_id === clienteSelecionado) {
+                const msg = document.createElement('div');
+                msg.textContent = `${data.usuario}: ${data.mensagem}`;
+                mensagensDiv.appendChild(msg);
+            }
         });
-    
-        // Enviar mensagem
-        function enviarMensagem() {
-            const mensagem = document.getElementById('message').value;
-            socket.emit('mensagem', { usuario: 'Atendente', mensagem: mensagem, cliente_id: clienteId });
-            document.getElementById('message').value = '';  // Limpar campo
-        }
+
+        clientesLista.addEventListener('click', (e) => {
+            clienteSelecionado = e.target.dataset.clienteId;
+            mensagensDiv.innerHTML = '';
+            fetch(`/historico/${clienteSelecionado}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(msg => {
+                        const msgDiv = document.createElement('div');
+                        msgDiv.textContent = `${msg.enviado_por}: ${msg.mensagem}`;
+                        mensagensDiv.appendChild(msgDiv);
+                    });
+                });
+        });
+
+        formulario.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const mensagem = mensagemInput.value;
+            if (mensagem && clienteSelecionado) {
+                fetch('/enviar-mensagem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cliente_id: clienteSelecionado,
+                        mensagem: mensagem
+                    })
+                });
+                mensagemInput.value = '';
+            }
+        });
     </script>
 </body>
 </html>
