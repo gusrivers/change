@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM MVP Chat</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Painel Esquerdo -->
+        <div class="left-panel">
+            <h2>Conversas</h2>
+            <ul class="conversation-list">
+                {% for cliente in clientes %}
+                <li class="conversation" onclick="carregarMensagens({{ cliente[0] }}, this)">
+                    {{ cliente[1] }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Painel Central -->
+        <div class="chat-panel">
+            <h2 id="cliente-nome">Selecione uma conversa</h2>
+            <div class="messages"></div>
+            <div class="chat-input">
+                <input type="text" placeholder="Escreva uma mensagem..." id="mensagem-input" />
+                <button id="enviar-btn" disabled>Enviar</button>
+            </div>
+        </div>
+
+        <!-- Painel Direito -->
+        <div class="right-panel">
+            <h2>Informações do cliente</h2>
+            <p id="cliente-info">Selecione um cliente para ver os detalhes.</p>
+        </div>
+    </div>
+
+    <script>
+        let clienteIdAtual = null;
+
+        // Inicializa o WebSocket
+        const socket = io(); // Conecta ao servidor Socket.IO
+
+        // Função para carregar mensagens iniciais e entrar no chat do cliente
+        async function carregarMensagens(clienteId, element) {
+            try {
+                // Destacar conversa ativa
+                document.querySelectorAll('.conversation').forEach(el => el.classList.remove('active'));
+                element.classList.add('active');
+
+                // Atualizar cliente atual
+                clienteIdAtual = clienteId;
+
+                // Habilitar botão de envio
+                document.getElementById('enviar-btn').disabled = false;
+
+                // Entrar na sala do cliente no servidor WebSocket
+                socket.emit('entrar_conversa', { cliente_id: clienteIdAtual });
+
+                // Fetch das mensagens do cliente
+                const response = await fetch(`/api/mensagens/${clienteId}`);
+                const mensagens = await response.json();
+
+                const mensagensContainer = document.querySelector('.messages');
+                mensagensContainer.innerHTML = ''; // Limpa mensagens anteriores
+
+                mensagens.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = 'message';
+                    div.innerHTML = `
+                        <span class="timestamp">${msg.data_envio}</span>
+                        <p><b>${msg.tipo === 'usuario' ? 'Cliente' : 'Atendente'}:</b> ${msg.texto}</p>
+                    `;
+                    mensagensContainer.appendChild(div);
+                });
+
+                // Atualizar o nome do cliente
+                document.getElementById('cliente-nome').textContent = element.textContent;
+
+            } catch (error) {
+                console.error('Erro ao carregar mensagens:', error);
+            }
+        }
+
+        // Função para enviar uma mensagem via WebSocket
+        function enviarMensagem() {
+            const input = document.getElementById('mensagem-input');
+            const texto = input.value;
+
+            if (texto.trim() === '') return;
+
+            // Envia mensagem via WebSocket
+            socket.emit('enviar_mensagem', { cliente_id: clienteIdAtual, texto });
+
+            // Limpa o campo de entrada
+            input.value = '';
+        }
+
+        // Ouve novas mensagens do WebSocket
+        socket.on('nova_mensagem', (mensagem) => {
+            if (mensagem.cliente_id === clienteIdAtual) {
+                const mensagensContainer = document.querySelector('.messages');
+                const div = document.createElement('div');
+                div.className = 'message';
+                div.innerHTML = `
+                    <span class="timestamp">${mensagem.data_envio}</span>
+                    <p><b>${mensagem.tipo === 'usuario' ? 'Cliente' : 'Atendente'}:</b> ${mensagem.texto}</p>
+                `;
+                mensagensContainer.appendChild(div);
+            }
+        });
+
+        // Vincula o evento de envio de mensagem ao botão
+        document.getElementById('enviar-btn').onclick = enviarMensagem;
+    </script>
+</body>
+</html>

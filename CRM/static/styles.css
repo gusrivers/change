@@ -1,0 +1,165 @@
+/* styles.css */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+    max-width: 100vw;
+}
+
+.left-panel, .chat-panel, .right-panel {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.left-panel {
+    width: 20%;
+    background-color: #1f2937;
+    color: #ffffff;
+    border-right: 2px solid #ccc;
+}
+
+.left-panel h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+}
+
+.conversation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.conversation {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.conversation.active {
+    background-color: #4a5568;
+}
+
+.conversation:hover {
+    background-color: #374151;
+}
+
+.chat-panel {
+    flex: 1;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    border-right: 2px solid #ccc;
+}
+
+.chat-panel h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+}
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.message {
+    margin-bottom: 10px;
+}
+
+.message .timestamp {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.chat-input {
+    display: flex;
+    border-top: 1px solid #ccc;
+    padding: 10px 0 0 0;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+.chat-input button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.chat-input button:hover {
+    background-color: #45a049;
+}
+
+.right-panel {
+    width: 25%;
+    background-color: #f9fafb;
+    color: #333;
+}
+
+.right-panel h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+}
+
+.right-panel p {
+    margin: 10px 0;
+}
+
+.right-panel button {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.right-panel button:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .left-panel, .right-panel {
+        width: 100%;
+    }
+
+    .chat-panel {
+        flex: none;
+        height: 50vh;
+    }
+}
