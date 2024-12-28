@@ -35,6 +35,14 @@
     </div>
 
     <script>
+        fetch('/api/atendentes')
+            .then(response => response.json())
+            .then(data => {
+                data.atendentes.forEach(atendente => {
+                    console.log(`${atendente.nome} (${atendente.email}) - Status: ${atendente.ativo ? 'Ativo' : 'Inativo'}`);
+                });
+            });
+
         const socket = io(); // Conecta ao servidor WebSocket
 
         // Verifica se a conexão foi bem-sucedida
@@ -64,15 +72,17 @@
                     const mensagensContainer = document.querySelector('.messages');
                     mensagensContainer.innerHTML = '';
 
+                    // Verifica o tipo da mensagem
                     data.forEach(msg => {
                         const div = document.createElement('div');
-                        div.className = `message ${msg.tipo}`;
+                        div.className = `message ${msg.tipo}`; // Usa a classe baseada no tipo da mensagem
                         div.innerHTML = `
                             <span class="timestamp">${msg.data_envio}</span>
                             <p><b>${msg.tipo === 'usuario' ? 'Cliente' : 'Atendente'}:</b> ${msg.texto}</p>
                         `;
                         mensagensContainer.appendChild(div);
                     });
+
                 } else {
                     console.error('Esperado um array, mas o retorno foi:', data);
                 }
@@ -84,42 +94,101 @@
                 console.error('Erro ao carregar mensagens:', error);
             }
         }
+        async function carregarInformacoesCliente(clienteId) {
+            try {
+                const response = await fetch(`/api/clientes/${clienteId}`);
+                const cliente = await response.json();
 
-
-        // Envia mensagem pelo WebSocket
-        function enviarMensagem() {
-            const input = document.getElementById('mensagem-input');
-            const texto = input.value;
-
-            if (texto.trim() === '') return;
-
-            socket.emit('enviar_mensagem', { cliente_id: clienteIdAtual, texto });
-
-            // Adiciona a mensagem localmente
-            const mensagensContainer = document.querySelector('.messages');
-            const div = document.createElement('div');
-            div.className = 'message cliente';
-            div.innerHTML = `<span class="timestamp">Agora</span><p><b>Você:</b> ${texto}</p>`;
-            mensagensContainer.appendChild(div);
-
-            input.value = '';
+                document.getElementById('cliente-info').innerHTML = `
+                    <p><b>Nome:</b> ${cliente.nome}</p>
+                    <p><b>Email:</b> ${cliente.email}</p>
+                    <p><b>Telefone:</b> ${cliente.telefone || 'Não informado'}</p>
+                    <p><b>Origem:</b> ${cliente.origem || 'Não informado'}</p>
+                `;
+            } catch (error) {
+                console.error('Erro ao carregar informações do cliente:', error);
+            }
+        }
+        function formatarHora(dataEnvio) {
+            const data = new Date(dataEnvio);
+            const horas = data.getHours().toString().padStart(2, '0'); // Formata as horas para 2 dígitos
+            const minutos = data.getMinutes().toString().padStart(2, '0'); // Formata os minutos para 2 dígitos
+            return `${horas}:${minutos}`;
         }
 
+        function enviarMensagem() {
+                const input = document.getElementById('mensagem-input');
+                const texto = input.value;  // Usar 'texto' já que foi definido como o valor do input
+
+                if (texto.trim() === '') return;  // Evitar enviar mensagens vazias
+
+                // Verifica se o cliente foi selecionado antes de enviar a mensagem
+                if (!clienteIdAtual) {
+                    console.error('Nenhum cliente selecionado!');
+                    return;
+                }
+
+                // Envia a mensagem ao servidor via WebSocket
+                socket.emit('enviar_mensagem', {
+                    cliente_id: clienteIdAtual,   // ID do cliente selecionado
+                    texto: texto,                 // Texto da mensagem
+                    atendente_id: 1     // ID do atendente, se estiver logado
+                });
+
+                // Limpa o campo de entrada
+                input.value = '';
+
+                // Reabilita o botão de envio se o campo de texto não estiver vazio
+                document.getElementById('enviar-btn').disabled = !input.value.trim();
+            }
+
+            // Configura o botão de enviar
+            document.getElementById('enviar-btn').onclick = enviarMensagem;
+
+
+        socket.on('nova_mensagem', (data) => {
+            // Atualiza a lista de mensagens no painel de chat
+            if (data.cliente_id === clienteIdAtual) {
+            const mensagensContainer = document.querySelector('.messages');
+            const div = document.createElement('div');
+            div.className = `message atendente`; // Classe para atendente
+            div.innerHTML = `
+                <span class="timestamp">${data.data_envio}</span>
+                <p><b>Atendente:</b> ${data.texto}</p>
+            `;
+            mensagensContainer.appendChild(div);  // Adiciona a nova mensagem ao painel
+
+            // Desce a rolagem do painel de mensagens para a última mensagem
+            mensagensContainer.scrollTop = mensagensContainer.scrollHeight;
+        }
+
+        // Atualiza a última mensagem na lista de clientes
+        const clienteItem = document.querySelector(`#clientes-list li[data-id="${data.cliente_id}"]`);
+        if (clienteItem) {
+            clienteItem.querySelector('.ultima-mensagem').textContent = data.texto;
+            clienteItem.querySelector('.ultima-hora-tempo').textContent = new Date(data.data_envio).toLocaleString();
+        }
+    });
+    
         // Atualiza clientes em tempo real
         socket.on('atualizar_clientes', (data) => {
-            console.log('Dados recebidos no cliente:', data); // Verifique se os dados chegam aqui
             const clientesList = document.getElementById('clientes-list');
             clientesList.innerHTML = ''; // Limpa a lista de clientes antes de adicionar novos itens
+
             data.clientes.forEach(cliente => {
                 const listItem = document.createElement('li');
-                listItem.textContent = `${cliente.nome} - Última mensagem: ${cliente.ultima_mensagem || 'Nenhuma mensagem'}`;
+                listItem.classList.add('conversation');
+                listItem.innerHTML = `
+                    <div class="conversation-header">
+                        <span class="cliente-nome">${cliente.nome}</span>
+                        <span class="ultima-hora-tempo">${cliente.ultima_mensagem_tempo || 'N/A'}</span>
+                    </div>
+                    <p class="ultima-mensagem">${cliente.ultima_mensagem || 'Nenhuma mensagem'}</p>
+                `;
                 listItem.onclick = () => carregarMensagens(cliente.id, listItem);
                 clientesList.appendChild(listItem);
             });
         });
-
-        // Configurações de inicialização
-        document.getElementById('enviar-btn').onclick = enviarMensagem;
     </script>
 </body>
 </html>

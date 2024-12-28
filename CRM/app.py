@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_cors import CORS
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -21,59 +21,69 @@ db = SQLAlchemy(app)
 
 # ------------------ MODELOS DO BANCO DE DADOS ------------------
 
-class Mensagem(db.Model):
-    __tablename__ = 'mensagens'
-    id = db.Column(db.Integer, primary_key=True)
-    cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=False)
-    atendente_id = db.Column(db.Integer, db.ForeignKey('atendente.id'), nullable=False)
-    mensagem = db.Column(db.String(500))
-    tipo = db.Column(db.String(20))
-    enviado_em = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Usando backref para referenciar as classes
-    cliente = db.relationship('Cliente', backref='mensagens')  # De 'Cliente' para 'Mensagem'
-    atendente = db.relationship('Atendente', backref='mensagens')  # De 'Atendente' para 'Mensagem'
-
-
 class Clientes(db.Model):
-    __tablename__ = 'cliente'
+    __tablename__ = 'clientes'
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     telefone = db.Column(db.String(20), nullable=True)
-    origem = db.Column(db.String(50), nullable=True)
-    criado_em = db.Column(db.DateTime, default=func.now(), nullable=False)
-    ultima_mensagem = db.Column(db.Text, nullable=True)
-    ultima_mensagem_tempo = db.Column(db.DateTime, nullable=True)
+    origem = db.Column(db.String(50), nullable=True)  # Origem do cliente (e.g., redes sociais)
+    ultima_mensagem = db.Column(db.Text, nullable=True)  # Última mensagem enviada ou recebida
+    ultima_mensagem_tempo = db.Column(db.DateTime, nullable=True)  # Data e hora da última mensagem
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Mensagens são referenciadas aqui
-    mensagens = db.relationship('Mensagem', backref='cliente', lazy=True)  # Relacionamento com 'Mensagem'
-
+    mensagens = db.relationship('Mensagem', back_populates='cliente', lazy=True)
 
 class Atendente(db.Model):
-    __tablename__ = 'atendente'
+    __tablename__ = 'atendentes'
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
-    senha_hash = db.Column(db.String(255), nullable=False)
-    ativo = db.Column(db.Boolean, default=True)
+    senha_hash = db.Column(db.String(255), nullable=False)  # Senha armazenada como hash
+    ativo = db.Column(db.Boolean, default=True)  # Define se o atendente está ativo
+    mensagens = db.relationship('Mensagem', back_populates='atendente', lazy=True)
 
-    # Mensagens são referenciadas aqui
-    mensagens = db.relationship('Mensagem', backref='atendente', lazy=True)  # Relacionamento com 'Mensagem'
+    # Métodos para gerenciar hash da senha
+    def set_password(self, senha):
+        """Define o hash da senha"""
+        self.senha_hash = generate_password_hash(senha)
+
+    def check_password(self, senha):
+        """Verifica se a senha fornecida corresponde ao hash"""
+        return check_password_hash(self.senha_hash, senha)
+
+class Mensagem(db.Model):
+    __tablename__ = 'mensagens'
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
+    atendente_id = db.Column(db.Integer, db.ForeignKey('atendentes.id'), nullable=True)
+    mensagem = db.Column(db.Text, nullable=False)
+    tipo = db.Column(db.Enum('usuario', 'atendente'), nullable=False)
+    enviado_em = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    cliente = db.relationship('Clientes', back_populates='mensagens')
+    atendente = db.relationship('Atendente', back_populates='mensagens')
+
 
 class DistribuicaoDeLeads(db.Model):
     __tablename__ = 'distribuicao_de_leads'
     id = db.Column(db.Integer, primary_key=True)
-    cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=False)  # Corrigido para 'clientes.id'
+    cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=False)  # Corrigido para 'cliente.id'
     atendente_id = db.Column(db.Integer, db.ForeignKey('atendente.id'), nullable=False)
     distribuido_em = db.Column(db.DateTime, default=func.now())
+
 
 class StatusLead(db.Model):
     __tablename__ = 'status_do_lead'
     id = db.Column(db.Integer, primary_key=True)
-    cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=False)  # Corrigido para 'clientes.id'
-    status = db.Column(db.Enum('Novo', 'Contato Inicial', 'Negociação', 'Vendido', 'Perdido', 'Remarketing'), nullable=False)
+    cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=False)  # Corrigido para 'cliente.id'
+    status = db.Column(
+        db.Enum('Novo', 'Contato Inicial', 'Negociação', 'Vendido', 'Perdido', 'Remarketing'),
+        nullable=False
+    )
     atualizado_em = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
+
 
 # ------------------ ROTAS ------------------
 
@@ -125,22 +135,27 @@ def chat():
     
     return render_template('chat.html', clientes=clientes)
 
-@app.route('/api/mensagens/<int:cliente_id>')
-def mensagens(cliente_id):
-    try:
-        mensagens = Mensagem.query.filter_by(cliente_id=cliente_id).all()
-        mensagens_data = [
-            {
-                'tipo': msg.tipo,
-                'texto': msg.mensagem,  # Corrigido o campo de 'texto' para 'mensagem'
-                'data_envio': msg.enviado_em.strftime('%d/%m/%Y %H:%M')
-            }
-            for msg in mensagens
-        ]
-        return jsonify(mensagens_data)  # Certifique-se de retornar um array JSON válido
-    except Exception as e:
-        print(f"Erro ao carregar mensagens para o cliente {cliente_id}: {e}")
-        return jsonify({'error': 'Erro ao carregar mensagens'}), 500
+@app.route('/api/mensagens/<int:cliente_id>', methods=['GET'])
+def get_mensagens(cliente_id):
+    mensagens = (
+        Mensagem.query
+        .filter_by(cliente_id=cliente_id)
+        .order_by(Mensagem.enviado_em)
+        .all()
+    )
+    return jsonify([
+        {
+            'id': msg.id,
+            'cliente_id': msg.cliente_id,
+            'atendente_id': msg.atendente_id,
+            'texto': msg.mensagem,
+            'tipo': 'usuario' if msg.atendente_id is None else 'atendente',
+            'data_envio': msg.enviado_em.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        for msg in mensagens
+    ])
+
+
 
 
 @app.route('/api/clientes', methods=['GET'])
@@ -207,6 +222,48 @@ def handle_connect():
     ]
     socketio.emit('atualizar_clientes', {'clientes': lista_clientes})
 
+@app.route('/api/atendentes')
+def listar_atendentes():
+    atendentes = Atendente.query.all()
+    response = [
+        {
+            'id': atendente.id,
+            'nome': atendente.nome,
+            'email': atendente.email,
+            'ativo': atendente.ativo
+        }
+        for atendente in atendentes
+    ]
+    return jsonify({'atendentes': response})
+
+
+def criar_atendente(nome, email, senha):
+    atendente = Atendente(
+        nome=nome,
+        email=email,
+        ativo=True
+    )
+    atendente.set_password(senha)
+    db.session.add(atendente)
+    db.session.commit()
+    return atendente
+
+def autenticar_atendente(email, senha):
+    atendente = Atendente.query.filter_by(email=email).first()
+    if atendente and atendente.check_password(senha):
+        if not atendente.ativo:
+            return {'erro': 'Atendente inativo.'}
+        return {'sucesso': 'Login realizado com sucesso!', 'atendente': atendente.nome}
+    return {'erro': 'Email ou senha inválidos.'}
+
+def alterar_status_atendente(atendente_id, ativo):
+    atendente = Atendente.query.get(atendente_id)
+    if atendente:
+        atendente.ativo = ativo
+        db.session.commit()
+        return {'sucesso': f'Status atualizado para {"ativo" if ativo else "inativo"}.'}
+    return {'erro': 'Atendente não encontrado.'}
+
 
 @socketio.on('entrar_fila')
 def entrar_fila(data):
@@ -230,6 +287,41 @@ def atualizar_fila():
         for status_lead, cliente in clientes_na_fila
     ]
     socketio.emit('atualizar_fila', {'fila': fila_formatada}, broadcast=True)
+
+@socketio.on('enviar_mensagem')
+def handle_enviar_mensagem(data):
+    try:
+        cliente_id = data['cliente_id']
+        texto = data['texto']
+        atendente_id = data['atendente_id']
+
+        # Cria a mensagem no banco de dados
+        mensagem = Mensagem(
+            cliente_id=cliente_id,
+            atendente_id=atendente_id,
+            mensagem=texto,
+            tipo='atendente'
+        )
+        db.session.add(mensagem)
+
+        # Atualiza o cliente com a última mensagem
+        cliente = Clientes.query.get(cliente_id)
+        if cliente:
+            cliente.ultima_mensagem = texto
+            cliente.ultima_mensagem_tempo = datetime.utcnow()
+
+        db.session.commit()
+
+        # Emite a mensagem para o cliente
+        emit('nova_mensagem', {
+            'cliente_id': cliente_id,
+            'texto': texto,
+            'tipo': 'atendente',
+            'data_envio': mensagem.enviado_em.strftime('%Y-%m-%d %H:%M:%S')
+        }, broadcast=True)
+    except Exception as e:
+        print("Erro ao enviar mensagem:", e)
+
 
 @app.route('/logout')
 def logout():
