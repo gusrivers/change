@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban de Clientes</title>
+    <link rel="stylesheet" href="/static/stylesk.css"> <!-- Link para o seu CSS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js"></script> <!-- Dragula -->
+</head>
+<body>
+
+    <div class="message-funnel">
+        <h1>Funil de Mensagens</h1>
+        <div class="funnel-stages">
+            <!-- Estágio 1: Primeiro Contato -->
+            <div class="funnel-stage" id="stage-first-contact">
+                <h2>Primeiro Contato</h2>
+                <div class="messages" id="messages-first-contact">
+                    <!-- Mensagens serão carregadas aqui -->
+                </div>
+            </div>
+    
+            <!-- Estágio 2: Interação em Andamento -->
+            <div class="funnel-stage" id="stage-in-progress">
+                <h2>Interação em Andamento</h2>
+                <div class="messages" id="messages-in-progress">
+                    <!-- Mensagens serão carregadas aqui -->
+                </div>
+            </div>
+    
+            <!-- Estágio 3: Fechamento -->
+            <div class="funnel-stage" id="stage-closed">
+                <h2>Fechamento</h2>
+                <div class="messages" id="messages-closed">
+                    <!-- Mensagens serão carregadas aqui -->
+                </div>
+            </div>
+    
+            <!-- Estágio 4: Follow-up -->
+            <div class="funnel-stage" id="stage-follow-up">
+                <h2>Follow-up</h2>
+                <div class="messages" id="messages-follow-up">
+                    <!-- Mensagens serão carregadas aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    const messages = {
+        "Primeiro Contato": [
+            { id: 1, text: "Olá! Gostaria de saber mais sobre o produto." },
+            { id: 2, text: "Vocês atendem na região de São Paulo?" }
+        ],
+        "Interação em Andamento": [
+            { id: 3, text: "Obrigado pelas informações, estou analisando a proposta." }
+        ],
+        "Fechamento": [
+            { id: 4, text: "Gostaria de fechar o contrato! Qual o próximo passo?" }
+        ],
+        "Follow-up": [
+            { id: 5, text: "Tudo certo com o produto que recebi, muito obrigado!" }
+        ]
+    };
+
+    // Função para carregar mensagens no funil
+    function carregarMensagens() {
+        Object.entries(messages).forEach(([stage, stageMessages]) => {
+            const stageId = `messages-${stage.toLowerCase().replace(/\s+/g, '-')}`;
+            const stageContainer = document.getElementById(stageId);
+
+            if (stageContainer) {
+                stageMessages.forEach(msg => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message';
+                    messageDiv.innerHTML = `<strong>Mensagem #${msg.id}:</strong> <p>${msg.text}</p>`;
+                    stageContainer.appendChild(messageDiv);
+                });
+            }
+        });
+    }
+
+    carregarMensagens();
+});
+
+    </script>
+</body>    

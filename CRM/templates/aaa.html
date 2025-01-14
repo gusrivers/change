@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle de Leads</title>
+    <link rel="stylesheet" href="/static/stylea.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Painel de Controle de Leads</h1>
+        
+        <!-- Painel de Gráficos -->
+        <div class="graphs">
+            <div class="graph">
+                <h2>Status dos Leads</h2>
+                <canvas id="statusChart"></canvas>
+            </div>
+            <div class="graph">
+                <h2>Entradas de Leads</h2>
+                <canvas id="leadsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Kanban -->
+        <div class="kanban">
+            <h2>Kanban de Leads</h2>
+            <div class="kanban-columns">
+                <div class="kanban-column" id="cards-aguardando">
+                    <h3>Aguardando Atendimento</h3>
+                    <div class="messages" id="messages-aguardando"></div>
+                </div>
+                <div class="kanban-column" id="cards-em-atendimento">
+                    <h3>Em Atendimento</h3>
+                    <div class="messages" id="messages-em-atendimento"></div>
+                </div>
+                <div class="kanban-column" id="cards-finalizado">
+                    <h3>Finalizado</h3>
+                    <div class="messages" id="messages-finalizado"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Função para carregar os gráficos
+        function loadCharts(statusData, entradasData) {
+            // Configuração do gráfico de status
+            const statusChart = new Chart(document.getElementById('statusChart'), {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(statusData),
+                    datasets: [{
+                        label: 'Status dos Leads',
+                        data: Object.values(statusData),
+                        backgroundColor: ['#ffeb3b', '#81c784', '#7986cb'],
+                        borderColor: ['#fbc02d', '#4caf50', '#3f51b5'],
+                        borderWidth: 1
+                    }]
+                }
+            });
+
+            // Configuração do gráfico de entradas
+            const leadsChart = new Chart(document.getElementById('leadsChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(entradasData),
+                    datasets: [{
+                        label: 'Entradas de Leads',
+                        data: Object.values(entradasData),
+                        backgroundColor: '#42a5f5',
+                        borderColor: '#1e88e5',
+                        borderWidth: 1
+                    }]
+                }
+            });
+        }
+
+        // Função para carregar os dados do Kanban
+        // Função para carregar os clientes por status dinamicamente
+function loadKanban() {
+    const statusList = ['aguardando', 'em-atendimento', 'finalizado', 'remarketing']; // Lista de status
+    
+    statusList.forEach(status => {
+        // Fetch para obter os clientes com o status
+        fetch(`/clientes/${status}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro ao buscar clientes com status ${status}`);
+                }
+                return response.json();
+            })
+            .then(clientes => {
+                // Para cada status, você cria a lista de clientes
+                const statusId = `messages-${status.toLowerCase()}`;
+                const statusContainer = document.getElementById(statusId);
+                if (statusContainer) {
+                    statusContainer.innerHTML = ''; // Limpa o conteúdo anterior
+                    clientes.forEach(cliente => {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'message';
+                        messageDiv.textContent = `${cliente.nome} - ${cliente.email}`;
+                        statusContainer.appendChild(messageDiv);
+                    });
+                }
+            })
+            .catch(error => console.error(error));
+    });
+}
+
+    // Função para obter entradas de leads
+    function fetchEntradas() {
+        fetch('/api/entradas')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar entradas');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Passar os dados para o gráfico (exemplo fictício)
+                loadCharts(data); // Aqui você pode ajustar para como quiser renderizar o gráfico
+            })
+            .catch(error => console.error('Erro ao buscar entradas:', error));
+    }
+
+    // Função para chamar as duas funções acima
+    function fetchData() {
+        loadKanban(); // Carregar os dados do Kanban
+        fetchEntradas(); // Carregar as entradas dos leads
+    }
+
+    // Executar as funções quando a página for carregada
+    window.onload = fetchData;
+
+
+        // Carregar os dados ao carregar a página
+        document.addEventListener('DOMContentLoaded', fetchData);
+    </script>
+</body>
+</html>

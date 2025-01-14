@@ -2,54 +2,272 @@
 <html lang="en">
 <head>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.2/dragula.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM MVP Chat</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Painel Esquerdo -->
-        <div class="left-panel">
-            <h2>Conversas</h2>
-            <ul id="clientes-list" class="conversation-list">
-                <!-- Lista de clientes será gerada dinamicamente -->
-            </ul>
-        </div>
-
-        <!-- Painel Central -->
-        <div class="chat-panel">
-            <h2 id="cliente-nome">Selecione uma conversa</h2>
-            <div class="messages"></div>
-            <div class="chat-input">
-                <input type="text" placeholder="Escreva uma mensagem..." id="mensagem-input" />
-                <button id="enviar-btn" disabled>Enviar</button>
-            </div>
-        </div>
-
-        <!-- Painel Direito -->
-        <div class="right-panel">
-            <h2>Informações do cliente</h2>
-            <p id="cliente-info">Selecione um cliente para ver os detalhes.</p>
-        </div>
+    <!-- Navegação entre abas -->
+    <div class="tab-navigation">
+        <button class="tab-button" onclick="openTab('chat')">Chat</button>
+        <button class="tab-button" onclick="openTab('kanban')">Kanban</button>
     </div>
 
+    <!-- Conteúdo das abas -->
+    <div id="chat" class="tab-content">
+        <div class="container">
+            <!-- Painel Esquerdo -->
+            <div class="left-panel">
+                <h2>Conversas</h2>
+                <ul id="clientes-list" class="conversation-list">
+                    <!-- Lista de clientes será gerada dinamicamente -->
+                </ul>
+            </div>
+    
+            <!-- Painel Central -->
+            <div class="chat-panel">
+                <h2 id="cliente-nome">Selecione uma conversa</h2>
+                <div class="messages"></div>
+                <div class="chat-input">
+                    <input type="text" placeholder="Escreva uma mensagem..." id="mensagem-input" />
+                    <button id="enviar-btn" disabled>Enviar</button>
+                </div>
+            </div>
+    
+            <!-- Painel Direito -->
+            <div class="right-panel">
+                <h2>Informações do Cliente</h2>
+                <div id="cliente-info">
+                    <div class="info-item">
+                        <b>Nome:</b>
+                        <span>Selecione um cliente</span>
+                    </div>
+                    <div class="info-item">
+                        <b>Email:</b>
+                        <span>Selecione um cliente</span>
+                    </div>
+                    <div class="info-item">
+                        <b>Telefone:</b>
+                        <span>Não informado</span>
+                    </div>
+                    <div class="info-item">
+                        <b>Origem:</b>
+                        <span>Não informado</span>
+                    </div>
+                    <p><strong>Status:</strong> <span id="cliente-status"></span></p>
+                </div>
+                <div class="status-container">
+                    <label for="status-select">Atualizar Status:</label>
+                    <select id="status-select">
+                        <option value="Em atendimento">Em Atendimento</option>
+                        <option value="Finalizado">Finalizado</option>
+                        <option value="Pendente">Pendente</option>
+                    </select>
+                    <button id="update-status-btn">Atualizar</button>
+                </div>                        
+                <button id="action-button" disabled>Tomar Ação</button>
+            </div>
+            
+        </div>
+    
+    </div>
+
+    <div id="kanban" class="tab-content" style="display:none;">
+        <!-- Coluna Aguardando -->
+        <div class="kanban">
+        <div id="aguardando" class="kanban-column">
+            <h3>Aguardando Atendimento</h3>
+            <div id="cards-aguardando-atendimento" class="kanban-cards"></div>
+        </div>
+        <div id="em-atendimento" class="kanban-column">
+            <h3>Em Atendimento</h3>
+            <div id="cards-em-atendimento" class="kanban-cards"></div>
+        </div>
+        <div id="finalizado" class="kanban-column">
+            <h3>Finalizado</h3>
+            <div id="cards-finalizado" class="kanban-cards"></div>
+        </div>
+        <div id="remarketing" class="kanban-column">
+            <h3>remarketing</h3>
+            <div id="cards-remarketing" class="kanban-cards"></div>
+        </div> 
+    </div>
+
+    <!-- Scripts -->
     <script>
-        fetch('/api/atendentes')
-            .then(response => response.json())
-            .then(data => {
-                data.atendentes.forEach(atendente => {
-                    console.log(`${atendente.nome} (${atendente.email}) - Status: ${atendente.ativo ? 'Ativo' : 'Inativo'}`);
-                });
+        document.getElementById('mensagem-input').addEventListener('input', (e) => {
+            document.getElementById('enviar-btn').disabled = e.target.value.trim() === '';
+        });
+        function openTab(tabName) {
+            // Esconde o conteúdo de todas as abas
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
             });
 
-        const socket = io(); // Conecta ao servidor WebSocket
+            // Remove a classe "active" de todos os botões
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
 
-        // Verifica se a conexão foi bem-sucedida
+            // Mostra a aba selecionada
+            document.getElementById(tabName).style.display = 'block';
+            document.querySelector(`.tab-button[onclick="openTab('${tabName}')"]`).classList.add('active');
+
+            // Verifica se a aba é o Kanban
+            if (tabName === 'kanban') {
+                console.log('Carregando a aba Kanban...');
+                carregarClientes(); // Carrega os dados do Kanban
+                inicializarDragula(); // Inicializa Dragula
+            }
+        }
+
+            // Inicializa a aba 'chat' como ativa
+            document.addEventListener('DOMContentLoaded', () => {
+                openTab('chat');
+            });
+        // Inicializa WebSocket
+        const socket = io();
         socket.on('connect', () => {
             console.log('Conexão WebSocket estabelecida!');
-        }); // Conecta ao servidor WebSocket
-        let clienteIdAtual = null;
+        });
+
+        // Carregar clientes para o Kanban
+        async function carregarKanban() {
+            const response = await fetch('/api/kanban');
+            const data = await response.json();
+            
+            const columns = {
+                'aguardando': document.getElementById('aguardando'),
+                'em-atendimento': document.getElementById('em-atendimento'),
+                'finalizado': document.getElementById('finalizado'),
+                'remarketing': document.getElementById('remarketing')
+            };
+
+            // Cria os cartões para cada status
+            data.forEach(cliente => {
+                const card = document.createElement('div');
+                card.className = 'kanban-card';
+                card.innerHTML = `${cliente.nome} (${cliente.email})`;
+
+                // Adiciona o cartão à coluna correspondente
+                columns[cliente.status.toLowerCase()].appendChild(card);
+            });
+        }
+
+        // Chamado quando a aba 'Kanban' é aberta
+        socket.on('kanbanAtualizado', () => {
+            if (document.getElementById('kanban').style.display === 'block') {
+                carregarKanban();
+            }
+        });
+        function formatarHora(dataEnvio) {
+            try {
+                // Tenta separar o formato "YYYY-MM-DD HH:mm:ss"
+                const [data, hora] = dataEnvio.split(' '); // "2024-12-29 17:36:30" -> ["2024-12-29", "17:36:30"]
+                const [ano, mes, dia] = data.split('-').map(Number); // "2024-12-29" -> [2024, 12, 29]
+                const [horas, minutos] = hora.split(':').map(Number); // "17:36:30" -> [17, 36]
+
+                // Constrói o objeto Date usando os valores extraídos
+                const dataFormatada = new Date(ano, mes - 1, dia, horas, minutos); // Mês é 0-indexado
+
+                // Verifica se a data é válida
+                if (isNaN(dataFormatada.getTime())) {
+                    throw new Error(`Formato de data inválido: ${dataEnvio}`);
+                }
+
+                // Retorna a hora no formato HH:mm
+                return dataFormatada.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            } catch (error) {
+                console.error(`Erro ao formatar hora: ${error.message}`);
+                return 'Horário inválido'; // Fallback para erros
+            }
+        }
+            // Função para alternar entre as abas
+            
+
+        async function carregarClientes() {
+        const statusList = ['Aguardando atendimento', 'Em Atendimento', 'Finalizado','Remarketing'];
+
+        for (let status of statusList) {
+            console.log(`Carregando clientes para o status: ${status}`);
+            const response = await fetch(`/clientes/${status}`);
+            const clientes = await response.json();
+            console.log(`Clientes recebidos para ${status}:`, clientes);
+
+            // Transformar status em ID válido
+            const idColuna = `cards-${status.toLowerCase().replace(/\s+/g, '-')}`;
+            const coluna = document.getElementById(idColuna);
+
+            if (!coluna) {
+                console.error(`Coluna com ID "${idColuna}" não encontrada no DOM.`);
+                continue;
+            }
+
+            // Limpando os cartões antigos antes de adicionar novos
+            coluna.innerHTML = '';
+
+            clientes.forEach(cliente => {
+                console.log(`Adicionando cartão para cliente: ${cliente.nome}`);
+                const card = document.createElement('div');
+                card.className = 'kanban-card';
+                card.id = `card-${cliente.id}`;
+                card.innerHTML = `${cliente.nome} (${cliente.email})`;
+                coluna.appendChild(card);
+            });
+        }
+    }
+
+    function inicializarDragula() {
+    const aguardando = document.getElementById('cards-aguardando-atendimento');
+    const emAtendimento = document.getElementById('cards-em-atendimento');
+    const finalizado = document.getElementById('cards-finalizado');
+    const remarketing = document.getElementById('cards-remarketing')
+
+    if (!aguardando || !emAtendimento || !finalizado || !remarketing) {
+        console.error('Colunas do Kanban não encontradas. Verifique os IDs no HTML.');
+        return;
+    }
+
+    const drake = dragula([aguardando, emAtendimento, finalizado, remarketing])
+        .on('drop', function (el, target, source) {
+            if (!target || !el) {
+                console.error('Elemento ou coluna de destino não encontrado.');
+                return;
+            }
+
+            // Pegando o ID do cliente no cartão arrastado
+            const cardId = el.id.split('-')[1];
+
+            // Pegando o novo status com base no ID da coluna de destino
+            let novoStatus = target.id.replace('cards-', '').replace(/-/g, ' ');
+
+            // Colocando a primeira letra do status em maiúscula
+            novoStatus = novoStatus.charAt(0).toUpperCase() + novoStatus.slice(1);
+
+            console.log(`Movendo cliente com ID ${cardId} para o status: ${novoStatus}`);
+
+            // Atualizando o status no backend
+            fetch(`/clientes/${cardId}/atualizar-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: novoStatus })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        console.error(`Erro ao atualizar status do cliente ${cardId}.`);
+                    } else {
+                        console.log(`Status do cliente ${cardId} atualizado com sucesso.`);
+                    }
+                })
+                .catch(error => console.error('Erro de rede:', error));
+        });
+
+    console.log('Dragula inicializado com sucesso!');
+}
 
         // Carrega mensagens de um cliente
         async function carregarMensagens(clienteId, element) {
@@ -57,43 +275,38 @@
                 clienteIdAtual = clienteId;
                 document.getElementById('enviar-btn').disabled = false;
 
-                // Atualiza visualmente o cliente selecionado
+                // Atualiza o visual do cliente selecionado
                 document.querySelectorAll('#clientes-list li').forEach(li => li.classList.remove('selected'));
                 element.classList.add('selected');
 
-                // Fetch de mensagens
+                // Atualiza mensagens
                 const response = await fetch(`/api/mensagens/${clienteId}`);
-                const data = await response.json();
+                const mensagens = await response.json();
+                
+                const mensagensContainer = document.querySelector('.messages');
+                mensagensContainer.innerHTML = '';
+                mensagens.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = `message ${msg.tipo}`;
+                    div.innerHTML = `
+                        <span class="timestamp">${formatarHora(msg.data_envio)}</span>
+                        <p><b>${msg.tipo === 'usuario' ? 'Cliente' : 'Atendente'}:</b> ${msg.texto}</p>
+                    `;
+                    mensagensContainer.appendChild(div);
+                });
+                mensagensContainer.scrollTop = mensagensContainer.scrollHeight;
 
-                console.log('Dados recebidos:', data);  // Verifique o que está sendo retornado pela API
+                // Atualiza informações do cliente
+                await carregarInformacoesCliente(clienteId);
 
-                // Verifique se data é realmente um array
-                if (Array.isArray(data)) {
-                    const mensagensContainer = document.querySelector('.messages');
-                    mensagensContainer.innerHTML = '';
-
-                    // Verifica o tipo da mensagem
-                    data.forEach(msg => {
-                        const div = document.createElement('div');
-                        div.className = `message ${msg.tipo}`; // Usa a classe baseada no tipo da mensagem
-                        div.innerHTML = `
-                            <span class="timestamp">${msg.data_envio}</span>
-                            <p><b>${msg.tipo === 'usuario' ? 'Cliente' : 'Atendente'}:</b> ${msg.texto}</p>
-                        `;
-                        mensagensContainer.appendChild(div);
-                    });
-
-                } else {
-                    console.error('Esperado um array, mas o retorno foi:', data);
-                }
-
-                // Atualiza o nome do cliente
+                // Atualiza o nome no painel de chat
                 document.getElementById('cliente-nome').textContent = element.textContent;
 
             } catch (error) {
                 console.error('Erro ao carregar mensagens:', error);
             }
         }
+
         async function carregarInformacoesCliente(clienteId) {
             try {
                 const response = await fetch(`/api/clientes/${clienteId}`);
@@ -104,72 +317,29 @@
                     <p><b>Email:</b> ${cliente.email}</p>
                     <p><b>Telefone:</b> ${cliente.telefone || 'Não informado'}</p>
                     <p><b>Origem:</b> ${cliente.origem || 'Não informado'}</p>
+                    <p><b>Status:</b> ${cliente.status}</p>
                 `;
+
+                // Atualizar o data-cliente-id da classe .status-container
+                document.querySelector('.status-container').setAttribute('data-cliente-id', clienteId);
+
+                return cliente;
             } catch (error) {
                 console.error('Erro ao carregar informações do cliente:', error);
+                return null;
             }
         }
-        function formatarHora(dataEnvio) {
-            const data = new Date(dataEnvio);
-            const horas = data.getHours().toString().padStart(2, '0'); // Formata as horas para 2 dígitos
-            const minutos = data.getMinutes().toString().padStart(2, '0'); // Formata os minutos para 2 dígitos
-            return `${horas}:${minutos}`;
-        }
 
-        function enviarMensagem() {
-                const input = document.getElementById('mensagem-input');
-                const texto = input.value;  // Usar 'texto' já que foi definido como o valor do input
 
-                if (texto.trim() === '') return;  // Evitar enviar mensagens vazias
-
-                // Verifica se o cliente foi selecionado antes de enviar a mensagem
-                if (!clienteIdAtual) {
-                    console.error('Nenhum cliente selecionado!');
-                    return;
-                }
-
-                // Envia a mensagem ao servidor via WebSocket
-                socket.emit('enviar_mensagem', {
-                    cliente_id: clienteIdAtual,   // ID do cliente selecionado
-                    texto: texto,                 // Texto da mensagem
-                    atendente_id: 1     // ID do atendente, se estiver logado
-                });
-
-                // Limpa o campo de entrada
-                input.value = '';
-
-                // Reabilita o botão de envio se o campo de texto não estiver vazio
-                document.getElementById('enviar-btn').disabled = !input.value.trim();
+        // Exemplo de uso:
+        async function usarInformacoesCliente(clienteId) {
+            const cliente = await carregarInformacoesCliente(clienteId);
+            if (cliente) {
+                console.log(`Nome do cliente: ${cliente.nome}`);
+            } else {
+                console.log('Erro ao carregar o cliente.');
             }
-
-            // Configura o botão de enviar
-            document.getElementById('enviar-btn').onclick = enviarMensagem;
-
-
-        socket.on('nova_mensagem', (data) => {
-            // Atualiza a lista de mensagens no painel de chat
-            if (data.cliente_id === clienteIdAtual) {
-            const mensagensContainer = document.querySelector('.messages');
-            const div = document.createElement('div');
-            div.className = `message atendente`; // Classe para atendente
-            div.innerHTML = `
-                <span class="timestamp">${data.data_envio}</span>
-                <p><b>Atendente:</b> ${data.texto}</p>
-            `;
-            mensagensContainer.appendChild(div);  // Adiciona a nova mensagem ao painel
-
-            // Desce a rolagem do painel de mensagens para a última mensagem
-            mensagensContainer.scrollTop = mensagensContainer.scrollHeight;
         }
-
-        // Atualiza a última mensagem na lista de clientes
-        const clienteItem = document.querySelector(`#clientes-list li[data-id="${data.cliente_id}"]`);
-        if (clienteItem) {
-            clienteItem.querySelector('.ultima-mensagem').textContent = data.texto;
-            clienteItem.querySelector('.ultima-hora-tempo').textContent = new Date(data.data_envio).toLocaleString();
-        }
-    });
-    
         // Atualiza clientes em tempo real
         socket.on('atualizar_clientes', (data) => {
             const clientesList = document.getElementById('clientes-list');
@@ -181,14 +351,104 @@
                 listItem.innerHTML = `
                     <div class="conversation-header">
                         <span class="cliente-nome">${cliente.nome}</span>
-                        <span class="ultima-hora-tempo">${cliente.ultima_mensagem_tempo || 'N/A'}</span>
+                        <span class="ultima-hora-tempo">${cliente.ultima_mensagem_tempo ? formatarHora(cliente.ultima_mensagem_tempo) : 'N/A'}</span>
                     </div>
                     <p class="ultima-mensagem">${cliente.ultima_mensagem || 'Nenhuma mensagem'}</p>
                 `;
+
                 listItem.onclick = () => carregarMensagens(cliente.id, listItem);
+                
                 clientesList.appendChild(listItem);
             });
         });
+        function enviarMensagem() {
+            const input = document.getElementById('mensagem-input');
+            const texto = input.value;
+            if (texto.trim() === '') return; // Evitar enviar mensagens vazias
+            if (!clienteIdAtual) {
+                console.error('Nenhum cliente selecionado!');
+                return;
+            }
+            socket.emit('enviar_mensagem', {
+                cliente_id: clienteIdAtual,
+                texto: texto,
+                atendente_id: 1 // ID do atendente
+            });
+            const clienteStatus = document.getElementById('cliente-status').textContent;
+
+            if (clienteStatus === 'Aguardando atendimento') {
+                fetch('/atualizar_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cliente_id: clienteIdAtual, novo_status: 'Em Atendimento' })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('cliente-status').textContent = 'Em Atendimento';
+                    } else {
+                        console.error('Erro ao atualizar o status:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao atualizar o status:', error);
+                });
+            }
+            input.value = '';
+            document.getElementById('enviar-btn').disabled = true;
+        }
+            document.getElementById('enviar-btn').onclick = enviarMensagem;
+
+            socket.on('nova_mensagem', (data) => {
+                if (data.cliente_id === clienteIdAtual) {
+                    const mensagensContainer = document.querySelector('.messages');
+                    const div = document.createElement('div');
+                    if (data.tipo === 'atendente') {
+                        div.className = `message atendente`; // Classe para mensagens do atendente
+                        div.innerHTML = `
+                            <span class="timestamp">${formatarHora(data.data_envio)}</span>
+                            <p><b>Atendente:</b> ${data.texto}</p>
+                        `;
+                    } else if (data.tipo === 'usuario') {
+                        div.className = `message usuario`; // Classe para mensagens do cliente
+                        div.innerHTML = `
+                            <span class="timestamp">${formatarHora(data.data_envio)}</span>
+                            <p><b>Cliente:</b> ${data.texto}</p>
+                        `;
+                    }
+                    mensagensContainer.appendChild(div);
+                    mensagensContainer.scrollTop = mensagensContainer.scrollHeight;
+                }
+                const clienteItem = document.querySelector(`#clientes-list li[data-id="${data.cliente_id}"]`);
+                if (clienteItem) {
+                    clienteItem.querySelector('.ultima-mensagem').textContent = data.texto;
+                    clienteItem.querySelector('.ultima-hora-tempo').textContent = formatarHora(data.data_envio); // Formatar somente a hora
+                }
+            });
+        document.getElementById('update-status-btn').addEventListener('click', () => {
+            const clienteId = document.querySelector('.status-container').getAttribute('data-cliente-id');
+            const novoStatus = document.getElementById('status-select').value;
+            if (!clienteId) {
+                alert('Erro: Nenhum cliente selecionado!');
+                return;
+            }
+            fetch('/atualizar_status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cliente_id: clienteId, novo_status: novoStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Status atualizado com sucesso!');
+                    // Atualiza o status exibido
+                    document.querySelector('#cliente-info p:nth-child(5)').innerHTML = `<b>Status:</b> ${novoStatus}`;
+                } else {
+                    alert('Erro: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Erro ao atualizar o status:', error))
+        })
     </script>
 </body>
 </html>

@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+import pytz
 from sqlalchemy.sql import func
 
 # Configuração da aplicação Flask
@@ -15,7 +16,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 # Configuração do banco de dados com SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/crm'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+FUSO_HORARIO = pytz.timezone("America/Sao_Paulo")
 # Instâncias do SQLAlchemy e SocketIO
 db = SQLAlchemy(app)
 
@@ -28,9 +29,10 @@ class Clientes(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False)
     telefone = db.Column(db.String(20), nullable=True)
     origem = db.Column(db.String(50), nullable=True)  # Origem do cliente (e.g., redes sociais)
+    status = db.Column(db.String(50), default='Aguardando atendimento')
     ultima_mensagem = db.Column(db.Text, nullable=True)  # Última mensagem enviada ou recebida
     ultima_mensagem_tempo = db.Column(db.DateTime, nullable=True)  # Data e hora da última mensagem
-    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+    criado_em = db.Column(db.DateTime, default=datetime.now(FUSO_HORARIO))
 
     mensagens = db.relationship('Mensagem', back_populates='cliente', lazy=True)
 
@@ -59,7 +61,7 @@ class Mensagem(db.Model):
     atendente_id = db.Column(db.Integer, db.ForeignKey('atendentes.id'), nullable=True)
     mensagem = db.Column(db.Text, nullable=False)
     tipo = db.Column(db.Enum('usuario', 'atendente'), nullable=False)
-    enviado_em = db.Column(db.DateTime, default=datetime.utcnow)
+    enviado_em = db.Column(db.DateTime, default=datetime.now(FUSO_HORARIO))
 
     # Relacionamentos
     cliente = db.relationship('Clientes', back_populates='mensagens')
@@ -122,7 +124,7 @@ def chat():
             'id': cliente.id,
             'nome': cliente.nome,
             'ultima_mensagem': cliente.ultima_mensagem or "Nenhuma mensagem",
-            'ultima_mensagem_tempo': cliente.ultima_mensagem_tempo.strftime('%d/%m/%Y %H:%M') if cliente.ultima_mensagem_tempo else "Não disponível",
+            'ultima_mensagem_tempo': cliente.ultima_mensagem_tempo.strftime('%d-%m-%Y %H:%M') if cliente.ultima_mensagem_tempo else "Não disponível",
             'origem': cliente.origem
         }
         for cliente in clientes
@@ -155,56 +157,93 @@ def get_mensagens(cliente_id):
         for msg in mensagens
     ])
 
+@app.route('/api/clientes/<int:cliente_id>', methods=['GET'])
+def obter_cliente(cliente_id):
+    cliente = Clientes.query.get(cliente_id)
+    if cliente:
+        return jsonify({
+            'id': cliente.id,
+            'nome': cliente.nome,
+            'email': cliente.email,
+            'telefone': cliente.telefone,
+            'origem': cliente.origem,
+            'status': cliente.status,     
+            'ultima_mensagem': cliente.ultima_mensagem,
+            'ultima_mensagem_tempo': cliente.ultima_mensagem_tempo.strftime('%Y-%m-%d %H:%M:%S') if cliente.ultima_mensagem_tempo else None
+        })
+    return jsonify({'error': 'Cliente não encontrado'}), 404
 
-
-
-@app.route('/api/clientes', methods=['GET'])
-def get_clientes():
-    pagina = request.args.get('pagina', 1, type=int)
-    tamanho_pagina = request.args.get('tamanho', 10, type=int)
-
-    clientes_query = Clientes.query.order_by(Clientes.ultima_mensagem_tempo.desc())
-    clientes_paginados = clientes_query.paginate(page=pagina, per_page=tamanho_pagina, error_out=False)
-
-    clientes_json = [
-        {
-            "id": cliente.id,
-            "nome": cliente.nome,
-            "ultima_mensagem": cliente.ultima_mensagem or "Nenhuma mensagem",
-            "ultima_mensagem_tempo": cliente.ultima_mensagem_tempo.strftime('%d/%m/%Y %H:%M') if cliente.ultima_mensagem_tempo else "Não disponível"
-        }
-        for cliente in clientes_paginados.items
-    ]
-
-    return jsonify({
-        "clientes": clientes_json,
-        "pagina_atual": clientes_paginados.page,
-        "total_paginas": clientes_paginados.pages,
-        "total_clientes": clientes_paginados.total
-    })
 
 @app.route('/enviar', methods=['POST'])
 def enviar_mensagem():
-    if 'atendente_id' not in session:
-        return jsonify({"error": "Usuário não autenticado"}), 403
-
     data = request.json
     cliente_id = data.get('cliente_id')
     texto = data.get('texto')
+    tipo = data.get('tipo')  # Pode ser 'usuario' ou 'atendente'
 
-    if not cliente_id or not texto:
-        return jsonify({"error": "Dados inválidos"}), 400
+    if not cliente_id or not texto or not tipo:
+        return jsonify({"error": "Dados inválidos. 'cliente_id', 'texto' e 'tipo' são obrigatórios."}), 400
 
-    nova_mensagem = Mensagem(cliente_id=cliente_id, mensagem=texto, tipo='atendente')
+    if tipo not in ['usuario', 'atendente']:
+        return jsonify({"error": "O campo 'tipo' deve ser 'usuario' ou 'atendente'."}), 400
+
+    atendente_id = session.get('atendente_id') if tipo == 'atendente' else None
+
+    # Cria uma nova mensagem
+    nova_mensagem = Mensagem(
+        cliente_id=cliente_id,
+        mensagem=texto,
+        tipo=tipo,
+        atendente_id=atendente_id
+    )
     db.session.add(nova_mensagem)
 
+    # Atualiza os dados do cliente
     cliente = Clientes.query.get(cliente_id)
-    cliente.ultima_mensagem = texto
-    cliente.ultima_mensagem_tempo = datetime.now()
+    if cliente:
+        cliente.ultima_mensagem = texto
+        cliente.ultima_mensagem_tempo = datetime.now(FUSO_HORARIO)
 
     db.session.commit()
 
-    return jsonify({"success": True})
+    # Emitir mensagem para o cliente ou atendente via WebSocket
+    socketio.emit('nova_mensagem', {
+        'cliente_id': cliente_id,
+        'texto': texto,
+        'tipo': tipo,
+        'data_envio': nova_mensagem.enviado_em.strftime('%Y-%m-%d %H:%M:%S')
+    }, to=None)
+
+    return jsonify({"success": True, "mensagem_id": nova_mensagem.id})
+
+@app.route('/atualizar_status', methods=['POST'])
+def atualizar_status():
+    data = request.json
+    cliente_id = data.get('cliente_id')
+    novo_status = data.get('novo_status')
+
+    print(f"Atualizando status do cliente {cliente_id} para {novo_status}")  # Debugging
+    
+    if not cliente_id or not novo_status:
+        return jsonify({'success': False, 'message': 'Cliente ID ou novo status não fornecido'}), 400
+
+    try:
+        cliente = Clientes.query.get(cliente_id)
+
+        if not cliente:
+            return jsonify({'success': False, 'message': 'Cliente não encontrado'}), 404
+
+        # Atualizando o status do cliente
+        cliente.status = novo_status
+        db.session.commit()
+        
+        print(f"Status atualizado para {cliente.status}")  # Debugging
+
+        return jsonify({'success': True, 'message': f'Status atualizado para {novo_status}'})
+    except Exception as e:
+        db.session.rollback()  # Em caso de erro, realiza rollback da transação
+        print(f"Erro ao atualizar status: {e}")
+        return jsonify({'success': False, 'message': 'Erro ao atualizar o status'}), 500
 
 @socketio.on('connect')
 def handle_connect():
@@ -215,7 +254,7 @@ def handle_connect():
             'id': cliente.id,
             'nome': cliente.nome,
             'ultima_mensagem': cliente.ultima_mensagem or "Nenhuma mensagem",
-            'ultima_mensagem_tempo': cliente.ultima_mensagem_tempo.strftime('%d/%m/%Y %H:%M') if cliente.ultima_mensagem_tempo else "Não disponível",
+            'ultima_mensagem_tempo': cliente.ultima_mensagem_tempo.strftime('%d-%m-%Y %H:%M') if cliente.ultima_mensagem_tempo else "Não disponível",
             'origem': cliente.origem
         }
         for cliente in clientes
@@ -308,7 +347,7 @@ def handle_enviar_mensagem(data):
         cliente = Clientes.query.get(cliente_id)
         if cliente:
             cliente.ultima_mensagem = texto
-            cliente.ultima_mensagem_tempo = datetime.utcnow()
+            cliente.ultima_mensagem_tempo = datetime.now(FUSO_HORARIO)
 
         db.session.commit()
 
@@ -322,6 +361,43 @@ def handle_enviar_mensagem(data):
     except Exception as e:
         print("Erro ao enviar mensagem:", e)
 
+@app.route('/kanban')
+def kanban():
+    return render_template('kanban.html')  # A página do Kanban
+
+@app.route('/aaa')
+def testes():
+    return render_template('aaa.html')
+
+@app.route('/clientes/<status>', methods=['GET'])
+def get_clientes_by_status(status):
+    # Supondo que você tenha um modelo Cliente com um campo 'status'
+    clientes = Clientes.query.filter_by(status=status).all()
+    
+    # Retorna os dados dos clientes em formato JSON
+    clientes_data = [{
+        'id': cliente.id,
+        'nome': cliente.nome,
+        'email': cliente.email,
+        'status': cliente.status
+    } for cliente in clientes]
+    print(clientes_data)
+    return jsonify(clientes_data)
+
+@app.route('/clientes/<int:id>/atualizar-status', methods=['POST'])
+def atualizar_status_cliente(id):
+    data = request.get_json()
+    novo_status = data.get('status')
+
+    # Atualize o cliente no banco de dados
+    cliente = Clientes.query.get(id)
+    if not cliente:
+        return jsonify({'erro': 'Cliente não encontrado'}), 404
+
+    cliente.status = novo_status
+    db.session.commit()
+
+    return jsonify({'mensagem': 'Status atualizado com sucesso!'}), 200
 
 @app.route('/logout')
 def logout():
